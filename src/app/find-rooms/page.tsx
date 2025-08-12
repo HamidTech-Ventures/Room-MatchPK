@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useChat } from "@/contexts/chat-context"
 import { useFormLocalStorage } from "@/hooks/use-local-storage"
 import { useUserPreferences } from "@/hooks/use-user-preferences"
+import { Logo } from "@/components/logo"
 import {
   Search,
   MapPin,
@@ -49,6 +50,10 @@ function FindRoomsContent() {
   const { isChatOpen, toggleChat } = useChat()
   const { preferences, toggleViewMode } = useUserPreferences()
   const [showProfile, setShowProfile] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1)
   const router = useRouter()
   
   // Initial filter values
@@ -89,6 +94,19 @@ function FindRoomsContent() {
     { id: "laundry", label: "Laundry", icon: Users },
     { id: "security", label: "Security", icon: Users },
     { id: "study", label: "Study Room", icon: Users },
+  ]
+
+  // Popular cities and areas for search suggestions
+  const popularLocations = [
+    "Lahore", "Karachi", "Islamabad", "Rawalpindi", "Faisalabad",
+    "Multan", "Peshawar", "Quetta", "Sialkot", "Gujranwala",
+    "DHA Lahore", "Gulberg Lahore", "Model Town Lahore", "Johar Town Lahore",
+    "Clifton Karachi", "Defence Karachi", "Gulshan Karachi", "North Nazimabad Karachi",
+    "F-6 Islamabad", "F-7 Islamabad", "F-8 Islamabad", "F-10 Islamabad", "F-11 Islamabad",
+    "Saddar Rawalpindi", "Satellite Town Rawalpindi", "Bahria Town Rawalpindi",
+    "University Town Peshawar", "Hayatabad Peshawar", "Board Bazaar Peshawar",
+    "Cantt Area", "Mall Road", "Liberty Market", "Anarkali Bazaar",
+    "Fortress Stadium", "Emporium Mall", "Packages Mall", "Centaurus Mall"
   ]
 
   useEffect(() => {
@@ -168,6 +186,21 @@ function FindRoomsContent() {
     fetchPropertyCounts()
   }, [])
 
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest('.search-container')) {
+        setShowSuggestions(false)
+      }
+    }
+
+    if (showSuggestions) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showSuggestions])
+
   // Handler for page change
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= pagination.pages && newPage !== pagination.page) {
@@ -225,6 +258,64 @@ function FindRoomsContent() {
     setPagination(prev => ({ ...prev, page: 1 }))
   }
 
+  // Handler for search input changes with suggestions
+  const handleSearchInputChange = (value: string) => {
+    handleFilterChange('searchQuery', value)
+    setSelectedSuggestionIndex(-1) // Reset selection when typing
+
+    if (value.length > 0) {
+      const filteredSuggestions = popularLocations
+        .filter(location =>
+          location.toLowerCase().includes(value.toLowerCase())
+        )
+        .slice(0, 8) // Limit to 8 suggestions
+
+      setSearchSuggestions(filteredSuggestions)
+      setShowSuggestions(filteredSuggestions.length > 0)
+    } else {
+      setSearchSuggestions([])
+      setShowSuggestions(false)
+    }
+  }
+
+  // Handler for selecting a suggestion
+  const handleSuggestionSelect = (suggestion: string) => {
+    handleFilterChange('searchQuery', suggestion)
+    setShowSuggestions(false)
+    setSearchSuggestions([])
+    setSelectedSuggestionIndex(-1)
+  }
+
+  // Handler for keyboard navigation in suggestions
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!showSuggestions || searchSuggestions.length === 0) return
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        setSelectedSuggestionIndex(prev =>
+          prev < searchSuggestions.length - 1 ? prev + 1 : 0
+        )
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        setSelectedSuggestionIndex(prev =>
+          prev > 0 ? prev - 1 : searchSuggestions.length - 1
+        )
+        break
+      case 'Enter':
+        e.preventDefault()
+        if (selectedSuggestionIndex >= 0) {
+          handleSuggestionSelect(searchSuggestions[selectedSuggestionIndex])
+        }
+        break
+      case 'Escape':
+        setShowSuggestions(false)
+        setSelectedSuggestionIndex(-1)
+        break
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Enhanced Navbar with Property Type Navigation */}
@@ -233,21 +324,8 @@ function FindRoomsContent() {
           {/* Single Row - Logo, Property Types, and User Controls */}
           <div className="flex items-center h-16 gap-2 sm:gap-4">
             {/* Logo */}
-            <div className="flex items-center space-x-1 sm:space-x-2 group cursor-default select-none flex-shrink-0 min-w-0">
-              <div className="w-7 h-7 sm:w-9 sm:h-9 relative group-hover:scale-105 transition-transform flex-shrink-0">
-                <Image
-                  src="/logo.jpg"
-                  alt="RoomMatch PK Logo"
-                  fill
-                  className="object-contain rounded-lg shadow-md"
-                />
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-base sm:text-lg font-bold text-slate-800 group-hover:text-emerald-600 transition-colors truncate">
-                  RoomMatch PK
-                </span>
-                <span className="text-xs text-slate-500 -mt-1 hidden md:block">Find Your Home</span>
-              </div>
+            <div className="cursor-default select-none flex-shrink-0 min-w-0">
+              <Logo size={36} textSize="md" className="flex-shrink-0" />
             </div>
 
             {/* Property Type Navigation - Center */}
@@ -390,17 +468,79 @@ function FindRoomsContent() {
       <div className="bg-slate-50 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           {/* Search Form */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-slate-200">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-slate-200 relative">
+            {/* Filter Button - Top Right */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilters(true)}
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 bg-white hover:bg-slate-50 border-slate-300"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              <span className="hidden sm:inline ml-1">Filters</span>
+            </Button>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 pr-16 sm:pr-20">
               <div className="sm:col-span-2 lg:col-span-2">
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 sm:w-5 h-4 sm:h-5 text-slate-400" />
+                <div className="relative search-container">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 sm:w-5 h-4 sm:h-5 text-slate-400 z-10" />
                   <Input
                     placeholder="Search hostels, cities, areas..."
                     value={filters.searchQuery}
-                    onChange={(e) => handleFilterChange('searchQuery', e.target.value)}
+                    onChange={(e) => handleSearchInputChange(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => {
+                      if (filters.searchQuery.length > 0 && searchSuggestions.length > 0) {
+                        setShowSuggestions(true)
+                      }
+                    }}
+                    onBlur={() => {
+                      // Delay hiding suggestions to allow clicking on them
+                      setTimeout(() => {
+                        setShowSuggestions(false)
+                        setSelectedSuggestionIndex(-1)
+                      }, 200)
+                    }}
                     className="pl-8 sm:pl-10 h-10 sm:h-12 border-slate-200 text-slate-800 text-sm sm:text-base"
                   />
+
+                  {/* Search Suggestions Dropdown */}
+                  {showSuggestions && searchSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto animate-in slide-in-from-top-2 duration-200">
+                      <div className="py-1">
+                        {searchSuggestions.map((suggestion, index) => (
+                          <button
+                            key={index}
+                            onClick={() => handleSuggestionSelect(suggestion)}
+                            className={`w-full text-left px-3 py-2.5 transition-colors duration-150 flex items-center space-x-3 group ${
+                              index === selectedSuggestionIndex
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : 'hover:bg-emerald-50 hover:text-emerald-700'
+                            }`}
+                          >
+                            <MapPin className={`w-4 h-4 flex-shrink-0 transition-colors duration-150 ${
+                              index === selectedSuggestionIndex
+                                ? 'text-emerald-500'
+                                : 'text-slate-400 group-hover:text-emerald-500'
+                            }`} />
+                            <span className={`text-sm font-medium ${
+                              index === selectedSuggestionIndex
+                                ? 'text-emerald-700'
+                                : 'text-slate-700 group-hover:text-emerald-700'
+                            }`}>
+                              {suggestion}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                      <div className="px-3 py-2 border-t border-slate-100 bg-slate-50">
+                        <p className="text-xs text-slate-500 flex items-center">
+                          <Search className="w-3 h-3 mr-1" />
+                          Press Enter to search or click a suggestion
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -446,6 +586,173 @@ function FindRoomsContent() {
           </div>
         </div>
       </div>
+
+      {/* Filter Slide-out Panel */}
+      {showFilters && (
+        <div className="fixed inset-0 z-50 overflow-hidden">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 transition-all duration-300 animate-in fade-in"
+            onClick={() => setShowFilters(false)}
+          />
+
+          {/* Panel */}
+          <div className="absolute right-0 top-0 h-full w-full sm:max-w-md bg-white shadow-xl transform transition-transform animate-in slide-in-from-right duration-300">
+            <div className="flex flex-col h-full">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-200">
+                <h2 className="text-lg sm:text-xl font-semibold text-slate-800 flex items-center">
+                  <SlidersHorizontal className="w-5 h-5 mr-2" />
+                  Filters
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowFilters(false)}
+                  className="text-slate-500 hover:text-slate-700 p-2 sm:p-1"
+                >
+                  ✕
+                </Button>
+              </div>
+
+              {/* Filter Content */}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
+                {/* Budget Range */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-slate-700">Budget Range (PKR)</h4>
+                  <div className="px-2">
+                    <Slider
+                      value={filters.priceRange}
+                      onValueChange={(value:any) => {
+                        const [min, max] = value
+                        if (max - min < 1000) return
+                        handleFilterChange('priceRange', value)
+                      }}
+                      max={50000}
+                      min={1000}
+                      step={500}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-sm text-slate-600 mt-2">
+                      <span>PKR {filters.priceRange[0].toLocaleString()}</span>
+                      <span>PKR {filters.priceRange[1].toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Property Type */}
+                <div className="space-y-3">
+                  <h4 className="font-medium text-slate-700">Property Type</h4>
+                  <Select
+                    value={filters.propertyType || "all"}
+                    onValueChange={(value) => handleFilterChange('propertyType', value === "all" ? "" : value)}
+                  >
+                    <SelectTrigger className="w-full h-12">
+                      <SelectValue placeholder="Select property type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="hostel">Hostel</SelectItem>
+                      <SelectItem value="apartment">Apartment</SelectItem>
+                      <SelectItem value="house">House</SelectItem>
+                      <SelectItem value="office">Office</SelectItem>
+                      <SelectItem value="hostel-mess">Hostel Mess</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Gender Preference */}
+                <div className="space-y-3">
+                  <h4 className="font-medium text-slate-700">Gender Preference</h4>
+                  <div className="space-y-3">
+                    {[
+                      { label: "Boys", value: "boys" },
+                      { label: "Girls", value: "girls" },
+                      { label: "Mixed", value: "mixed" }
+                    ].map((gender) => (
+                      <div key={gender.value} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-50">
+                        <Checkbox
+                          id={`filter-${gender.value}`}
+                          checked={filters.genderPreference === gender.value}
+                          onCheckedChange={(checked) =>
+                            handleFilterChange('genderPreference', checked ? gender.value : "")
+                          }
+                          className="w-5 h-5"
+                        />
+                        <label htmlFor={`filter-${gender.value}`} className="text-sm text-slate-700 cursor-pointer flex-1 py-1">
+                          {gender.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Amenities */}
+                <div className="space-y-3">
+                  <h4 className="font-medium text-slate-700">Amenities</h4>
+                  <div className="grid grid-cols-1 gap-2">
+                    {amenityOptions.map((amenity) => (
+                      <div key={amenity.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-50">
+                        <Checkbox
+                          id={`filter-${amenity.id}`}
+                          checked={filters.amenities.includes(amenity.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              handleFilterChange('amenities', [...filters.amenities, amenity.id])
+                            } else {
+                              handleFilterChange('amenities', filters.amenities.filter((a) => a !== amenity.id))
+                            }
+                          }}
+                          className="w-5 h-5"
+                        />
+                        <label htmlFor={`filter-${amenity.id}`} className="text-sm text-slate-700 cursor-pointer flex items-center flex-1 py-1">
+                          <amenity.icon className="w-4 h-4 mr-2" />
+                          {amenity.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sort By */}
+                <div className="space-y-3">
+                  <h4 className="font-medium text-slate-700">Sort By</h4>
+                  <Select value={filters.sortBy} onValueChange={(value) => handleFilterChange('sortBy', value)}>
+                    <SelectTrigger className="w-full h-12">
+                      <ArrowUpDown className="w-4 h-4 mr-2" />
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="relevance">Relevance</SelectItem>
+                      <SelectItem value="price-low">Price: Low to High</SelectItem>
+                      <SelectItem value="price-high">Price: High to Low</SelectItem>
+                      <SelectItem value="rating">Highest Rated</SelectItem>
+                      <SelectItem value="newest">Newest First</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 sm:p-6 border-t border-slate-200 space-y-3">
+                <Button
+                  variant="outline"
+                  onClick={handleClearFilters}
+                  className="w-full h-12 text-base"
+                >
+                  Clear All Filters
+                </Button>
+                <Button
+                  onClick={() => setShowFilters(false)}
+                  className="w-full h-12 text-base bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700"
+                >
+                  Apply Filters
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <UnifiedChat isOpen={isChatOpen} onToggle={toggleChat} />
 

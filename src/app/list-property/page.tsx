@@ -22,6 +22,7 @@ import { AuthLoading } from "@/components/auth-loading"
 import { HostelFormMultiStep } from "@/components/forms/hostel-form-multi-step"
 import { MessFormMultiStep } from "@/components/forms/mess-form-multi-step"
 import { OwnerDetailsForm } from "@/components/forms/owner-details-form"
+import { Logo } from "@/components/logo"
 // Removed draft functionality
 import {
   Upload,
@@ -1171,20 +1172,15 @@ function ListPropertyContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <div className="flex items-center space-x-3 group cursor-default select-none">
-              <div className="w-10 h-10 relative group-hover:scale-105 transition-transform">
-                <Image
-                  src="/logo.jpg"
-                  alt="RoomMatch PK Logo"
-                  fill
-                  className="object-contain rounded-xl shadow-lg"
-                />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xl font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">
-                  RoomMatch PK
-                </span>
-                <span className="text-xs text-slate-500 -mt-1">Property Owner</span>
+            <div className="cursor-default select-none">
+              <div className="flex items-center space-x-3">
+                <Logo size={40} showText={false} />
+                <div className="flex flex-col">
+                  <span className="text-xl font-bold text-slate-800 transition-colors">
+                    RoomMatch PK
+                  </span>
+                  <span className="text-xs text-slate-500 -mt-1">Property Owner</span>
+                </div>
               </div>
             </div>
 

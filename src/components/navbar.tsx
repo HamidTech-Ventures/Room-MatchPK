@@ -3,9 +3,9 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
+import { Logo } from "@/components/logo"
 import { Menu, Home, Search, Building, User, LogIn } from "lucide-react"
 
 export function Navbar() {
@@ -40,39 +40,11 @@ export function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           {logoHref ? (
-            <Link href={logoHref} className="flex items-center space-x-3 group">
-              <div className="w-10 h-10 relative group-hover:scale-105 transition-transform">
-                <Image
-                  src="/logo.jpg"
-                  alt="RoomMatch PK Logo"
-                  fill
-                  className="object-contain rounded-xl shadow-lg"
-                />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xl font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">
-                  RoomMatch PK
-                </span>
-                <span className="text-xs text-slate-500 -mt-1">Find Your Home</span>
-              </div>
+            <Link href={logoHref} className="group hover:scale-105 transition-transform">
+              <Logo size={40} className="group-hover:scale-105 transition-transform" />
             </Link>
           ) : (
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 relative">
-                <Image
-                  src="/logo.jpg"
-                  alt="RoomMatch PK Logo"
-                  fill
-                  className="object-contain rounded-xl shadow-lg"
-                />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xl font-bold text-slate-800">
-                  RoomMatch PK
-                </span>
-                <span className="text-xs text-slate-500 -mt-1">Find Your Home</span>
-              </div>
-            </div>
+            <Logo size={40} />
           )}
 
           {/* Desktop Navigation */}
@@ -117,20 +89,7 @@ export function Navbar() {
               <div className="flex flex-col h-full">
                 {/* Header */}
                 <div className="p-6 border-b border-slate-100">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 relative">
-                      <Image
-                        src="/logo.jpg"
-                        alt="RoomMatch PK Logo"
-                        fill
-                        className="object-contain rounded-xl"
-                      />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-lg font-bold text-slate-800">RoomMatch PK</span>
-                      <span className="text-xs text-slate-500 -mt-1">Find Your Home</span>
-                    </div>
-                  </div>
+                  <Logo size={40} textSize="lg" />
                 </div>
 
                 {/* Navigation Items */}

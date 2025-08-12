@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Logo } from "@/components/logo"
 import { Eye, EyeOff, Mail, Lock, Home, ArrowLeft, Sparkles } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { signIn } from "next-auth/react"
@@ -215,19 +216,8 @@ export default function AuthLoginPage() {
 
             {/* Logo */}
             <div className="text-center mb-6 sm:mb-8">
-              <Link href="/" className="inline-flex items-center space-x-3 group">
-                <div className="w-12 h-12 relative group-hover:scale-105 transition-transform">
-                  <Image
-                    src="/logo.jpg"
-                    alt="RoomMatch PK Logo"
-                    fill
-                    className="object-contain rounded-xl shadow-lg"
-                  />
-                </div>
-                <div className="text-left">
-                  <span className="text-2xl font-bold text-slate-800">RoomMatch PK</span>
-                  <div className="text-xs text-slate-500 -mt-1">Find Your Home</div>
-                </div>
+              <Link href="/" className="inline-block group hover:scale-105 transition-transform">
+                <Logo size={48} textSize="lg" />
               </Link>
             </div>
 

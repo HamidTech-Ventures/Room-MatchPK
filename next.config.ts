@@ -16,7 +16,14 @@ const nextConfig: NextConfig = {
         hostname: 'res.cloudinary.com',
       },
     ],
+    // Optimize images for better performance
+    formats: ['image/webp', 'image/avif'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
+  // Ensure static assets are properly served
+  assetPrefix: process.env.NODE_ENV === 'production' ? '' : '',
+  trailingSlash: false,
   /* config options here */
 };
 

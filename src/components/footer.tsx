@@ -2,9 +2,9 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Logo } from "@/components/logo"
 import { Home, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from "lucide-react"
 
 export function Footer() {
@@ -16,19 +16,8 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="space-y-6">
-            <Link href="/" className="flex items-center space-x-3">
-              <div className="w-10 h-10 relative">
-                <Image
-                  src="/logo.jpg"
-                  alt="RoomMatch PK Logo"
-                  fill
-                  className="object-contain rounded-xl"
-                />
-              </div>
-              <div>
-                <span className="text-xl font-bold">RoomMatch PK</span>
-                <div className="text-xs text-slate-400 -mt-1">Find Your Home</div>
-              </div>
+            <Link href="/">
+              <Logo size={40} variant="white" />
             </Link>
             <p className="text-slate-400 leading-relaxed">
               Pakistan's most trusted platform connecting students with safe, affordable, and comfortable accommodations

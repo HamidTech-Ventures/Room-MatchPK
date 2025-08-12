@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ProtectedRoute } from "@/components/protected-route"
 import { useAuth } from "@/contexts/auth-context"
+import { Logo } from "@/components/logo"
 import {
   Users,
   Building,
@@ -381,20 +382,15 @@ function AdminDashboardContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <Link href="/" className="flex items-center space-x-3 group">
-              <div className="w-10 h-10 relative group-hover:scale-105 transition-transform">
-                <Image
-                  src="/logo.jpg"
-                  alt="RoomMatch PK Logo"
-                  fill
-                  className="object-contain rounded-xl shadow-lg"
-                />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xl font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">
-                  RoomMatch PK
-                </span>
-                <span className="text-xs text-slate-500 -mt-1">Admin Dashboard</span>
+            <Link href="/" className="group hover:scale-105 transition-transform">
+              <div className="flex items-center space-x-3">
+                <Logo size={40} showText={false} />
+                <div className="flex flex-col">
+                  <span className="text-xl font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">
+                    RoomMatch PK
+                  </span>
+                  <span className="text-xs text-slate-500 -mt-1">Admin Dashboard</span>
+                </div>
               </div>
             </Link>
 

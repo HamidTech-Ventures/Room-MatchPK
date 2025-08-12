@@ -8,10 +8,11 @@ export const metadata: Metadata = {
   description: "Find and book the perfect hostel accommodation in Pakistan. Connect students with verified hostel owners.",
   icons: {
     icon: [
+      '/favicon.ico',
       {
-        url: '/logo.jpg',
+        url: '/logo.png',
         sizes: '32x32',
-        type: 'image/jpeg',
+        type: 'image/png',
       },
       {
         url: '/logo.jpg',
@@ -21,12 +22,12 @@ export const metadata: Metadata = {
     ],
     apple: [
       {
-        url: '/logo.jpg',
+        url: '/logo.png',
         sizes: '180x180',
-        type: 'image/jpeg',
+        type: 'image/png',
       },
     ],
-    shortcut: '/logo.jpg',
+    shortcut: '/favicon.ico',
   },
   manifest: '/site.webmanifest',
   themeColor: '#10b981',
@@ -40,9 +41,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/logo.jpg" type="image/jpeg" sizes="32x32" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/logo.png" type="image/png" sizes="32x32" />
         <link rel="icon" href="/logo.jpg" type="image/jpeg" sizes="16x16" />
-        <link rel="apple-touch-icon" href="/logo.jpg" type="image/jpeg" sizes="180x180" />
+        <link rel="apple-touch-icon" href="/logo.png" type="image/png" sizes="180x180" />
         <link rel="manifest" href="/site.webmanifest" />
         <meta name="theme-color" content="#10b981" />
       </head>

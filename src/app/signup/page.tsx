@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Logo } from "@/components/logo"
 import { Eye, EyeOff, Mail, Lock, User, Home, ArrowLeft, Sparkles, UserCheck, Building } from "lucide-react"
 import { signIn } from "next-auth/react"
 import { toast } from "sonner"
@@ -229,19 +230,8 @@ export default function SignUpPage() {
 
             {/* Logo */}
             <div className="text-center mb-8">
-              <Link href="/" className="inline-flex items-center space-x-3 group">
-                <div className="w-12 h-12 relative group-hover:scale-105 transition-transform">
-                  <Image
-                    src="/logo.jpg"
-                    alt="RoomMatch PK Logo"
-                    fill
-                    className="object-contain rounded-xl shadow-lg"
-                  />
-                </div>
-                <div className="text-left">
-                  <span className="text-2xl font-bold text-slate-800">RoomMatch PK</span>
-                  <div className="text-xs text-slate-500 -mt-1">Find Your Home</div>
-                </div>
+              <Link href="/" className="inline-block group hover:scale-105 transition-transform">
+                <Logo size={48} textSize="lg" />
               </Link>
             </div>
 
