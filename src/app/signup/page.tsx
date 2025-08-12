@@ -230,8 +230,13 @@ export default function SignUpPage() {
             {/* Logo */}
             <div className="text-center mb-8">
               <Link href="/" className="inline-flex items-center space-x-3 group">
-                <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-lg">
-                  <Home className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 relative group-hover:scale-105 transition-transform">
+                  <Image
+                    src="/logo.jpg"
+                    alt="RoomMatch PK Logo"
+                    fill
+                    className="object-contain rounded-xl shadow-lg"
+                  />
                 </div>
                 <div className="text-left">
                   <span className="text-2xl font-bold text-slate-800">RoomMatch PK</span>

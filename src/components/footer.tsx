@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Home, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from "lucide-react"
@@ -16,8 +17,13 @@ export function Footer() {
           {/* Company Info */}
           <div className="space-y-6">
             <Link href="/" className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
-                <Home className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 relative">
+                <Image
+                  src="/logo.jpg"
+                  alt="RoomMatch PK Logo"
+                  fill
+                  className="object-contain rounded-xl"
+                />
               </div>
               <div>
                 <span className="text-xl font-bold">RoomMatch PK</span>

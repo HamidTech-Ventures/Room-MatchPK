@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "setup": "node setup-env.js"
+    "setup": "node setup-env.js",
+    "verify-oauth": "node scripts/verify-oauth.js",
+    "test-oauth": "node scripts/test-oauth.js"
   },
   "dependencies": {
     "@next-auth/mongodb-adapter": "^1.1.3",

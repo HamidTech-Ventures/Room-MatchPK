@@ -251,22 +251,21 @@ export default function PropertyDetailPage() {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center space-x-3 group cursor-default select-none">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-lg">
-                {user?.role === 'admin' ? (
-                  <Shield className="w-5 h-5 text-white" />
-                ) : user?.role === 'owner' ? (
-                  <Building className="w-5 h-5 text-white" />
-                ) : (
-                  <User className="w-5 h-5 text-white" />
-                )}
+              <div className="w-10 h-10 relative group-hover:scale-105 transition-transform">
+                <Image
+                  src="/logo.jpg"
+                  alt="RoomMatch PK Logo"
+                  fill
+                  className="object-contain rounded-xl shadow-lg"
+                />
               </div>
               <div className="flex flex-col">
                 <span className="text-xl font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">
                   RoomMatch PK
                 </span>
                 <span className="text-xs text-slate-500 -mt-1">
-                  {user?.role === 'admin' ? 'Admin Dashboard' : 
-                   user?.role === 'owner' ? 'Property Owner' : 
+                  {user?.role === 'admin' ? 'Admin Dashboard' :
+                   user?.role === 'owner' ? 'Property Owner' :
                    'Find Your Home'}
                 </span>
               </div>

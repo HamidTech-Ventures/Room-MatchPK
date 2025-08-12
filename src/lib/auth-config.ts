@@ -47,7 +47,14 @@ export const authOptions: NextAuthOptions = {
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? [
       GoogleProvider({
         clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        authorization: {
+          params: {
+            prompt: "consent",
+            access_type: "offline",
+            response_type: "code"
+          }
+        }
       })
     ] : [])
   ],
@@ -127,11 +134,10 @@ export const authOptions: NextAuthOptions = {
             console.log('Google login successful for existing user:', existingUser.email)
           }
         } catch (error) {
-          console.error('Error handling Google OAuth user:', error)
-          // Set default values to prevent login failure
-          token.role = 'student'
-          token.id = user.id || ''
-          token.isNewUser = false
+          console.error('❌ Error handling Google OAuth user:', error)
+          console.error('Error details:', error)
+          // Throw the error to trigger the error page
+          throw new Error(`Google OAuth processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
         }
       }
       
@@ -146,39 +152,49 @@ export const authOptions: NextAuthOptions = {
       return session
     },
     async signIn({ user, account, profile, email, credentials }) {
+      console.log('🔐 SignIn callback triggered:', {
+        provider: account?.provider,
+        email: user.email,
+        userId: user.id
+      })
+
       // Handle Google OAuth sign-in validation
       if (account?.provider === 'google') {
         try {
+          console.log('🔍 Processing Google OAuth sign-in for:', user.email)
+
           // Check if MongoDB is configured
           if (!process.env.MONGODB_URI) {
-            console.warn('MongoDB not configured, allowing Google sign-in')
+            console.warn('⚠️ MongoDB not configured, allowing Google sign-in')
             return true
           }
 
           const existingUser = await findUserByEmail(user.email!)
-          
+          console.log('👤 Existing user check result:', existingUser ? 'Found' : 'Not found')
+
           // Check the callback URL to determine intent
           // Note: We'll handle intent checking in the callback page instead
           // For now, allow all Google sign-ins and handle logic in JWT callback
-          
+
           // If user exists with credentials only, allow them to link Google account
           if (existingUser && existingUser.provider === 'credentials') {
-            console.log('User exists with credentials, will link Google account')
+            console.log('🔗 User exists with credentials, will link Google account')
             return true
           }
-          
+
           // If user doesn't exist, they will be created in the jwt callback
           if (!existingUser) {
-            console.log('New Google user, will create account')
+            console.log('✨ New Google user, will create account')
             return true
           }
-          
+
           // User exists with Google or both providers
+          console.log('✅ Existing Google user, allowing sign-in')
           return true
         } catch (error) {
-          console.error('Error in signIn callback:', error)
-          // Don't block sign-in on error, let it proceed
-          return true
+          console.error('❌ Error in signIn callback:', error)
+          // Return false to show error page instead of proceeding
+          return false
         }
       }
       return true
@@ -186,11 +202,21 @@ export const authOptions: NextAuthOptions = {
     async redirect({ url, baseUrl }) {
       console.log('NextAuth redirect callback:', { url, baseUrl })
       
-      // Always redirect to our custom callback page after successful authentication
+      // If this is an OAuth callback (contains /api/auth/callback), let NextAuth handle it normally
+      if (url.includes('/api/auth/callback')) {
+        console.log('OAuth callback detected, allowing default NextAuth handling')
+        return url
+      }
+      
+      // Only redirect to custom callback page after successful authentication for final redirect
       if (url.startsWith('/') || url.startsWith(baseUrl)) {
-        const callbackUrl = `${baseUrl}/auth/callback`
-        console.log('Redirecting to callback:', callbackUrl)
-        return callbackUrl
+        // Check if this is the final redirect after successful auth
+        if (url === baseUrl || url === `${baseUrl}/`) {
+          const callbackUrl = `${baseUrl}/auth/callback`
+          console.log('Final redirect to custom callback:', callbackUrl)
+          return callbackUrl
+        }
+        return url
       }
       
       console.log('Redirecting to baseUrl:', baseUrl)
@@ -201,6 +227,6 @@ export const authOptions: NextAuthOptions = {
     signIn: '/auth/login',
     error: '/auth/error'
   },
-  debug: false, // Disable debug to avoid warnings
+  debug: process.env.NODE_ENV === 'development', // Enable debug in development
   secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-for-development-only',
 }

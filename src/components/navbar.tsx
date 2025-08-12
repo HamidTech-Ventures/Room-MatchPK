@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 import { Menu, Home, Search, Building, User, LogIn } from "lucide-react"
@@ -40,8 +41,13 @@ export function Navbar() {
           {/* Logo */}
           {logoHref ? (
             <Link href={logoHref} className="flex items-center space-x-3 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-lg">
-                <Home className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 relative group-hover:scale-105 transition-transform">
+                <Image
+                  src="/logo.jpg"
+                  alt="RoomMatch PK Logo"
+                  fill
+                  className="object-contain rounded-xl shadow-lg"
+                />
               </div>
               <div className="flex flex-col">
                 <span className="text-xl font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">
@@ -52,8 +58,13 @@ export function Navbar() {
             </Link>
           ) : (
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Home className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 relative">
+                <Image
+                  src="/logo.jpg"
+                  alt="RoomMatch PK Logo"
+                  fill
+                  className="object-contain rounded-xl shadow-lg"
+                />
               </div>
               <div className="flex flex-col">
                 <span className="text-xl font-bold text-slate-800">
@@ -107,8 +118,13 @@ export function Navbar() {
                 {/* Header */}
                 <div className="p-6 border-b border-slate-100">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
-                      <Home className="w-5 h-5 text-white" />
+                    <div className="w-10 h-10 relative">
+                      <Image
+                        src="/logo.jpg"
+                        alt="RoomMatch PK Logo"
+                        fill
+                        className="object-contain rounded-xl"
+                      />
                     </div>
                     <div className="flex flex-col">
                       <span className="text-lg font-bold text-slate-800">RoomMatch PK</span>

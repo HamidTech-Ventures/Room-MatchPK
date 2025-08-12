@@ -77,9 +77,9 @@ function ListPropertyContent() {
   const [currentStep, setCurrentStep] = useState(1)
   const [showProfile, setShowProfile] = useState(false)
   const [activeTab, setActiveTab] = useState("add-property")
-  const [showCategoryDialog, setShowCategoryDialog] = useState(true)
-  const [selectedCategory, setSelectedCategory] = useState<string>("")
-  const [propertySubType, setPropertySubType] = useState<string>("")
+  const [showCategoryDialog, setShowCategoryDialog] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<string>("hostel")
+  const [propertySubType, setPropertySubType] = useState<string>("hostel")
   const [currentFormType, setCurrentFormType] = useState<"hostel" | "mess">("hostel")
   
   // Form step states for each property type
@@ -93,7 +93,7 @@ function ListPropertyContent() {
   const initialFormData = {
     // Property Details
     propertyName: "",
-    propertyType: "",
+    propertyType: "hostel",
     genderPreference: "",
     totalRooms: "",
     availableRooms: "",
@@ -206,10 +206,10 @@ function ListPropertyContent() {
   
   const resetForm = () => {
     setFormData(initialFormData)
-    setSelectedCategory("")
-    setPropertySubType("")
+    setSelectedCategory("hostel")
+    setPropertySubType("hostel")
     setCurrentFormType("hostel")
-    setShowCategoryDialog(true)
+    setShowCategoryDialog(false)
     setShowMessForm(false)
     setMessFormStep(1) // Reset mess form step
     setHostelFormStep(1) // Reset hostel form step
@@ -405,9 +405,7 @@ function ListPropertyContent() {
       resetForm()
     }
     setActiveTab(tab)
-    if (tab === "add-property" && !selectedCategory && !skipFormClear) {
-      setShowCategoryDialog(true)
-    }
+    // No longer show category dialog - default to hostel form
   }
 
   const handleAmenityChange = (amenityId: string, checked: boolean) => {
@@ -1119,10 +1117,6 @@ function ListPropertyContent() {
         onOpenChange={(open) => {
           // Allow closing the dialog
           setShowCategoryDialog(open)
-          // If closing without selecting a category, reset to my-properties tab
-          if (!open && !selectedCategory) {
-            setActiveTab("my-properties")
-          }
         }}
       >
         <DialogContent className="sm:max-w-md">
@@ -1178,8 +1172,13 @@ function ListPropertyContent() {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center space-x-3 group cursor-default select-none">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-lg">
-                <Building className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 relative group-hover:scale-105 transition-transform">
+                <Image
+                  src="/logo.jpg"
+                  alt="RoomMatch PK Logo"
+                  fill
+                  className="object-contain rounded-xl shadow-lg"
+                />
               </div>
               <div className="flex flex-col">
                 <span className="text-xl font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">
@@ -1523,7 +1522,6 @@ function ListPropertyContent() {
               <p className="text-lg text-slate-600 mb-4">You have not listed any properties yet.</p>
               <Button onClick={() => {
                 setActiveTab("add-property")
-                setShowCategoryDialog(true)
               }} className="bg-emerald-600 hover:bg-emerald-700 cursor-pointer">
                 Add Your First Property
               </Button>
