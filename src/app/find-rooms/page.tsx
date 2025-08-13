@@ -15,7 +15,7 @@ import { ProtectedRoute } from "@/components/protected-route"
 import { useAuth } from "@/contexts/auth-context"
 import { useChat } from "@/contexts/chat-context"
 import { useFormLocalStorage } from "@/hooks/use-local-storage"
-import { useUserPreferences } from "@/hooks/use-user-preferences"
+
 import { Logo } from "@/components/logo"
 import {
   Search,
@@ -29,8 +29,6 @@ import {
   Utensils,
   AirVent,
   Users,
-  Grid3X3,
-  List,
   ArrowUpDown,
   User,
   LogOut,
@@ -48,7 +46,7 @@ import { Loader2 } from "lucide-react"
 function FindRoomsContent() {
   const { user, logout } = useAuth()
   const { isChatOpen, toggleChat } = useChat()
-  const { preferences, toggleViewMode } = useUserPreferences()
+
   const [showProfile, setShowProfile] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([])
@@ -78,8 +76,13 @@ function FindRoomsContent() {
   const [properties, setProperties] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Debug properties state changes
+  useEffect(() => {
+    console.log('Properties state changed:', properties.length, 'properties')
+  }, [properties])
   const [pagination, setPagination] = useState({ page: 1, limit: 12, total: 0, pages: 1 })
-  const [debugInfo, setDebugInfo] = useState<any>(null)
+
   const [imageLoadingStates, setImageLoadingStates] = useState<{[key: string]: boolean}>({})
   const [propertyCounts, setPropertyCounts] = useState<Record<string, number>>({})
   const [countsLoading, setCountsLoading] = useState(false)
@@ -142,10 +145,22 @@ function FindRoomsContent() {
         const currentMin = filters.priceRange?.[0] ?? defaultMin;
         const currentMax = filters.priceRange?.[1] ?? defaultMax;
 
+        console.log('=== PRICE FILTER FRONTEND DEBUG ===');
+        console.log('Current price range state:', filters.priceRange);
+        console.log('Current min:', currentMin, 'Current max:', currentMax);
+        console.log('Default min:', defaultMin, 'Default max:', defaultMax);
+        console.log('Min changed?', currentMin !== defaultMin);
+        console.log('Max changed?', currentMax !== defaultMax);
+
         // Only add price filters if they're different from the very wide defaults
         if (currentMin !== defaultMin || currentMax !== defaultMax) {
           params.append('minPrice', currentMin.toString())
           params.append('maxPrice', currentMax.toString())
+          console.log('=== PRICE FILTER PARAMS ===')
+          console.log(`Adding price filters: min=${currentMin}, max=${currentMax}`)
+        } else {
+          console.log('=== PRICE FILTER SKIPPED ===')
+          console.log(`Price range is at defaults: min=${currentMin}, max=${currentMax}`)
         }
 
         // Add amenities filter
@@ -157,6 +172,10 @@ function FindRoomsContent() {
         if (filters.sortBy) {
           params.append('sortBy', filters.sortBy)
         }
+
+        console.log('=== FRONTEND FILTER DEBUG ===', new Date().toISOString())
+        console.log('Current filters:', filters)
+        console.log('API URL:', `/api/properties/verified?${params.toString()}`)
 
         const res = await fetch(`/api/properties/verified?${params.toString()}`)
         if (!res.ok) throw new Error("Failed to fetch properties")
@@ -171,9 +190,10 @@ function FindRoomsContent() {
           console.log('Image type:', typeof data.properties[0].images?.[0])
           console.log('Image structure:', data.properties[0].images?.[0])
         }
+        console.log('Setting properties:', data.properties?.length || 0, 'properties')
         setProperties(data.properties || [])
         setPagination(data.pagination || { page: 1, limit: 12, total: 0, pages: 1 })
-        setDebugInfo(data.debug || null)
+
       } catch (err: any) {
         setError(err.message || "Error loading properties")
       } finally {
@@ -260,12 +280,29 @@ function FindRoomsContent() {
 
   // Handler for filter changes - reset to page 1 and update counts
   const handleFilterChange = (key: keyof typeof filters, value: any) => {
+    console.log('=== FILTER CHANGE ===')
+    console.log(`Changing ${key} to:`, value)
+    console.log('Current filters before change:', filters)
+
+    // Special logging for price range changes
+    if (key === 'priceRange') {
+      console.log('Price range change details:')
+      console.log('  New range:', value)
+      console.log('  Old range:', filters.priceRange)
+    }
+
     updateFilters(key, value)
     setPagination(prev => ({ ...prev, page: 1 }))
+
+    // Log after a short delay to see the updated state
+    setTimeout(() => {
+      console.log('Filters after change:', filters)
+    }, 100)
   }
 
   // Handler for property type change with smooth transition
   const handlePropertyTypeChange = (type: string) => {
+    console.log('Property type change triggered:', type)
     handleFilterChange('propertyType', type)
   }
 
@@ -645,7 +682,17 @@ function FindRoomsContent() {
                       ]}
                       onValueChange={(value:any) => {
                         const [min, max] = value
-                        if (max - min < 1000) return
+                        console.log('=== SLIDER VALUE CHANGE ===');
+                        console.log('New slider value:', value);
+                        console.log('Min:', min, 'Max:', max);
+                        console.log('Min-Max difference:', max - min);
+                        
+                        if (max - min < 1000) {
+                          console.log('Rejecting change: difference too small');
+                          return;
+                        }
+                        
+                        console.log('Accepting slider change, calling handleFilterChange');
                         handleFilterChange('priceRange', value)
                       }}
                       max={50000}
@@ -780,58 +827,7 @@ function FindRoomsContent() {
         <div className="flex flex-col gap-6 sm:gap-8">
           {/* Results Section - Now full width since sidebar is hidden */}
           <div className="w-full">
-            {/* Results Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-slate-800">Available Properties</h2>
-                <p className="text-slate-600">
-                  {loading ? "Fetching properties..." :
-                    properties.length === 0 ? "No properties found" :
-                    `Found ${properties.length.toLocaleString()} properties organized by city`
-                  }
-                </p>
-              </div>
 
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
-                {debugInfo && (
-                  <div className="text-sm text-slate-600 bg-slate-50 px-3 py-1 rounded border">
-                    Total: {debugInfo.totalInDb} | Approved: {debugInfo.approved} | Pending: {debugInfo.pending}
-                  </div>
-                )}
-                <Select value={filters.sortBy} onValueChange={(value) => handleFilterChange('sortBy', value)}>
-                  <SelectTrigger className="w-full sm:w-48">
-                    <ArrowUpDown className="w-4 h-4 mr-2" />
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="relevance">Relevance</SelectItem>
-                    <SelectItem value="price-low">Price: Low to High</SelectItem>
-                    <SelectItem value="price-high">Price: High to Low</SelectItem>
-                    <SelectItem value="rating">Highest Rated</SelectItem>
-                    <SelectItem value="newest">Newest First</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <div className="flex border border-slate-200 rounded-lg">
-                  <Button
-                    variant={preferences.viewMode === "grid" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={toggleViewMode}
-                    className="rounded-r-none"
-                  >
-                    <Grid3X3 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant={preferences.viewMode === "list" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={toggleViewMode}
-                    className="rounded-l-none"
-                  >
-                    <List className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
 
 
 
@@ -1073,16 +1069,18 @@ function FindRoomsContent() {
                           <div className="text-slate-500">
                             <span className="text-xs line-clamp-1">{location}</span>
                           </div>
-                          <div className="flex items-center justify-between pt-0.5">
-                            <div>
-                              <span className="text-sm font-bold text-slate-800">
-                                ₨{price.toLocaleString()}
-                              </span>
-                              <span className="text-xs text-slate-500 ml-1">for 2 nights</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                              <span className="text-xs font-medium text-slate-700">{rating}</span>
+                          <div className="flex items-center pt-0.5">
+                            <div className="flex items-center space-x-2">
+                              <div>
+                                <span className="text-sm font-bold text-slate-800">
+                                  ₨{price.toLocaleString()}
+                                </span>
+                                <span className="text-xs text-slate-500 ml-1">for 2 nights</span>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                                <span className="text-xs font-medium text-slate-700">{rating}</span>
+                              </div>
                             </div>
                           </div>
                         </div>

@@ -58,8 +58,16 @@ export async function GET(request: NextRequest) {
     }
 
     if (genderPreference) {
+      // Handle both old and new gender preference values for backward compatibility
+      const genderMapping: { [key: string]: string[] } = {
+        'boys': ['boys', 'male'],
+        'girls': ['girls', 'female'],
+        'mixed': ['mixed']
+      }
+
+      const possibleValues = genderMapping[genderPreference] || [genderPreference]
       baseFilter.$and = baseFilter.$and || []
-      baseFilter.$and.push({ genderPreference })
+      baseFilter.$and.push({ genderPreference: { $in: possibleValues } })
     }
 
     if (minPrice || maxPrice) {

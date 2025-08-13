@@ -21,6 +21,20 @@ export async function GET(request: NextRequest) {
     const amenities = searchParams.get('amenities')?.split(',').filter(Boolean)
     const sortBy = searchParams.get('sortBy') || 'createdAt'
 
+    // Debug: Log all received filter parameters
+    console.log('=== FILTER DEBUG ===')
+    console.log('Received filters:', {
+      search,
+      location,
+      city,
+      propertyType,
+      genderPreference,
+      minPrice,
+      maxPrice,
+      amenities,
+      sortBy
+    })
+
     const db = await getDatabase()
     const collection = db.collection<Property>('properties')
 
@@ -83,16 +97,71 @@ export async function GET(request: NextRequest) {
     }
 
     if (genderPreference) {
-      filter.genderPreference = genderPreference
+      // Handle both old and new gender preference values for backward compatibility
+      const genderMapping: { [key: string]: string[] } = {
+        'boys': ['boys', 'male'],
+        'girls': ['girls', 'female'],
+        'mixed': ['mixed']
+      }
+
+      const possibleValues = genderMapping[genderPreference] || [genderPreference]
+      filter.genderPreference = { $in: possibleValues }
     }
 
-    // Apply price filter only if it's not the default range or very wide range
-    const isDefaultRange = (minPrice === '1000' && maxPrice === '50000') ||
-                           (minPrice === '0' && maxPrice === '999999');
-    if (minPrice && maxPrice && !isDefaultRange) {
+    // Apply price filter if either min or max price is specified and not at the extremes
+    if (minPrice && maxPrice) {
       const min = parseInt(minPrice);
       const max = parseInt(maxPrice);
-      filter['pricing.pricePerBed'] = { $gte: min, $lte: max };
+      
+      console.log('=== API PRICE FILTER DEBUG ===');
+      console.log('minPrice param:', minPrice);
+      console.log('maxPrice param:', maxPrice);
+      console.log('Parsed min:', min);
+      console.log('Parsed max:', max);
+      
+      // Only skip filtering if both values are at their absolute extremes (indicating no user selection)
+      const isWideOpenRange = (min === 0 && max === 999999);
+      console.log('Is wide open range?', isWideOpenRange);
+      
+      if (!isWideOpenRange) {
+        // Filter properties that have a price within the range in any of the price fields
+        // Exclude null/undefined/zero values using $nin and $and
+        if (!filter.$and) filter.$and = [];
+        filter.$and.push({
+          $or: [
+            { 
+              $and: [
+                { 'pricing.pricePerBed': { $exists: true } },
+                { 'pricing.pricePerBed': { $type: "number" } },
+                { 'pricing.pricePerBed': { $nin: [null, 0] } },
+                { 'pricing.pricePerBed': { $gte: min, $lte: max } }
+              ]
+            },
+            { 
+              $and: [
+                { 'pricePerBed': { $exists: true } },
+                { 'pricePerBed': { $type: "number" } },
+                { 'pricePerBed': { $nin: [null, 0] } },
+                { 'pricePerBed': { $gte: min, $lte: max } }
+              ]
+            },
+            { 
+              $and: [
+                { 'monthlyRent': { $exists: true } },
+                { 'monthlyRent': { $type: "number" } },
+                { 'monthlyRent': { $nin: [null, 0] } },
+                { 'monthlyRent': { $gte: min, $lte: max } }
+              ]
+            }
+          ]
+        });
+        console.log('Applied robust multi-field numeric price filter with proper exclusions');
+      } else {
+        console.log('Skipped price filter (wide open range)');
+      }
+    } else {
+      console.log('=== API PRICE FILTER DEBUG ===');
+      console.log('No price params provided - minPrice:', minPrice, 'maxPrice:', maxPrice);
     }
 
     if (amenities && amenities.length > 0) {
@@ -102,9 +171,57 @@ export async function GET(request: NextRequest) {
     // Get total count for pagination
     const total = await collection.countDocuments(filter)
     
+    // Debug: Data audit - examine price field structures in approved properties
+    if (minPrice && maxPrice) {
+      const auditMin = parseInt(minPrice);
+      const auditMax = parseInt(maxPrice);
+      
+      // Only run audit if this isn't a wide-open range
+      if (!(auditMin === 0 && auditMax === 999999)) {
+        console.log('\n=== PRICE DATA AUDIT ===')
+        const allApproved = await collection.find({ 
+          status: 'approved', 
+          isActive: true, 
+          isVerified: true 
+        }).toArray()
+        
+        const priceAnalysis = allApproved.map(p => {
+          const pAny = p as any; // Type assertion for dynamic field access
+          return {
+            _id: p._id,
+            title: p.title?.substring(0, 30) + '...',
+            pricing_pricePerBed: p.pricing?.pricePerBed,
+            pricing_pricePerBed_type: typeof p.pricing?.pricePerBed,
+            pricePerBed: pAny.pricePerBed,
+            pricePerBed_type: typeof pAny.pricePerBed,
+            monthlyRent: pAny.monthlyRent,
+            monthlyRent_type: typeof pAny.monthlyRent,
+            hasAnyPrice: !!(p.pricing?.pricePerBed || pAny.pricePerBed || pAny.monthlyRent)
+          }
+        })
+        
+        console.log('Price field analysis for approved properties:')
+        priceAnalysis.forEach(p => {
+          console.log(`${p.title} - pricing.pricePerBed: ${p.pricing_pricePerBed} (${p.pricing_pricePerBed_type}), pricePerBed: ${p.pricePerBed} (${p.pricePerBed_type}), monthlyRent: ${p.monthlyRent} (${p.monthlyRent_type}), hasAnyPrice: ${p.hasAnyPrice}`)
+        })
+        
+        // Check specifically for problematic records
+        const problemRecords = priceAnalysis.filter(p => 
+          !p.hasAnyPrice || 
+          (p.pricing_pricePerBed_type && p.pricing_pricePerBed_type !== 'number') ||
+          (p.pricePerBed_type && p.pricePerBed_type !== 'number') ||
+          (p.monthlyRent_type && p.monthlyRent_type !== 'number')
+        )
+        
+        console.log(`Found ${problemRecords.length} potentially problematic price records:`)
+        problemRecords.forEach(p => console.log(`- ${p.title}: ${JSON.stringify(p)}`))
+        console.log('=== END PRICE AUDIT ===\n')
+      }
+    }
+    
     // Debug: Let's see what the actual filter looks like and what properties match
     console.log('Applied filter:', JSON.stringify(filter, null, 2))
-    
+
     // Debug: Check a few sample properties to see their structure
     const sampleProperties = await collection.find({}).limit(3).toArray()
     console.log('Sample properties structure:', sampleProperties.map(p => ({
@@ -113,11 +230,43 @@ export async function GET(request: NextRequest) {
       status: p.status,
       isActive: p.isActive,
       isVerified: p.isVerified,
-      pricing: p.pricing
+      propertyType: p.propertyType,
+      genderPreference: p.genderPreference,
+      amenities: p.amenities,
+      pricing: p.pricing,
+      allFields: Object.keys(p) // Show all available fields
     })))
-    
+
     // Debug: Check specifically approved properties
     const approvedProps = await collection.find({ status: 'approved' }).toArray()
+    console.log('Total approved properties:', approvedProps.length)
+
+    // Debug: Check properties matching specific filters
+    if (propertyType) {
+      const typeMatches = await collection.find({ propertyType: propertyType as any }).toArray()
+      console.log(`Properties with type "${propertyType}":`, typeMatches.length)
+    }
+
+    if (genderPreference) {
+      // Test both old and new values
+      const genderMapping: { [key: string]: string[] } = {
+        'boys': ['boys', 'male'],
+        'girls': ['girls', 'female'],
+        'mixed': ['mixed']
+      }
+
+      const possibleValues = genderMapping[genderPreference] || [genderPreference]
+      console.log(`Testing gender filter for "${genderPreference}" with values:`, possibleValues)
+
+      const genderMatches = await collection.find({ genderPreference: { $in: possibleValues as any } }).toArray()
+      console.log(`Properties with gender "${genderPreference}":`, genderMatches.length)
+
+      // Also test individual values
+      for (const value of possibleValues) {
+        const individualMatches = await collection.find({ genderPreference: value as any }).toArray()
+        console.log(`Properties with exact gender "${value}":`, individualMatches.length)
+      }
+    }
     console.log('Approved properties details:', approvedProps.map(p => ({
       _id: p._id,
       title: p.title,
@@ -157,6 +306,30 @@ export async function GET(request: NextRequest) {
       .skip(skip)
       .limit(limit)
       .toArray()
+    
+    console.log('=== QUERY RESULTS DEBUG ===');
+    console.log('Total properties found with filter:', total);
+    console.log('Properties returned:', properties.length);
+    console.log('Applied filter:', JSON.stringify(filter, null, 2));
+    console.log('Sample property pricing:', properties.slice(0, 5).map(p => ({
+      title: p.title,
+      pricePerBed: p.pricing?.pricePerBed,
+      rootPricePerBed: (p as any).pricePerBed,
+      monthlyRent: (p as any).monthlyRent,
+      fullPricing: p.pricing
+    })));
+    
+    // Also check if there are any properties that would match without price filter
+    const propertiesWithoutPriceFilter = await collection
+      .find({ status: 'approved', isActive: true, isVerified: true })
+      .limit(5)
+      .toArray();
+    console.log('Sample properties WITHOUT price filter:', propertiesWithoutPriceFilter.map(p => ({
+      title: p.title,
+      pricePerBed: p.pricing?.pricePerBed,
+      rootPricePerBed: (p as any).pricePerBed,
+      monthlyRent: (p as any).monthlyRent
+    })));
     
     // Fallback: If no properties found with complex filter, try with just approved status
     if (properties.length === 0 && total === 0) {
