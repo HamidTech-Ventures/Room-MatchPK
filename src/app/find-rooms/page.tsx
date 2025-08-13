@@ -6,7 +6,7 @@ import Link from "next/link"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
+
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
@@ -1000,13 +1000,13 @@ function FindRoomsContent() {
                   const price = property.pricing?.pricePerBed || 0;
                   const rating = property.rating || 0;
                   return (
-                    <Card
+                    <div
                       key={property._id}
-                      className="group hover:shadow-lg transition-all duration-300 overflow-hidden flex-shrink-0 w-60 bg-white rounded-xl border border-slate-200 cursor-pointer"
+                      className="group hover:shadow-lg transition-all duration-300 flex-shrink-0 w-60 cursor-pointer"
                       onClick={() => router.push(`/property/${property._id}`)}
                     >
-                        {/* Image */}
-                        <div className="relative w-full h-32 overflow-hidden bg-slate-100 rounded-t-xl">
+                        {/* Image - Full height */}
+                        <div className="relative w-full h-40 overflow-hidden bg-slate-100 rounded-xl">
                           {/* Guest Favorite Badge */}
                           <div className="absolute top-2 left-2 z-10">
                             <div className="bg-white/95 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium text-slate-700 shadow-sm">
@@ -1016,7 +1016,12 @@ function FindRoomsContent() {
 
                           {/* Heart Icon */}
                           <div className="absolute top-2 right-2 z-10">
-                            <button className="w-7 h-7 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-sm">
+                            <button
+                              className="w-7 h-7 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-sm"
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent card click when clicking heart
+                              }}
+                            >
                               <Heart className="w-3.5 h-3.5 text-slate-600 hover:text-red-500 transition-colors" />
                             </button>
                           </div>
@@ -1059,30 +1064,29 @@ function FindRoomsContent() {
                           )}
                         </div>
 
-                        {/* Content */}
-                        <CardContent className="p-3">
-                          <div className="space-y-1.5">
-                            <h3 className="font-medium text-sm text-slate-800 group-hover:text-emerald-600 transition-colors line-clamp-1">
-                              {name}
-                            </h3>
-                            <div className="flex items-center text-slate-500">
-                              <span className="text-xs line-clamp-1">{location}</span>
+
+                        {/* Content Below Image */}
+                        <div className="pt-2 space-y-1">
+                          <h3 className="font-medium text-sm text-slate-800 group-hover:text-emerald-600 transition-colors line-clamp-1">
+                            {name}
+                          </h3>
+                          <div className="text-slate-500">
+                            <span className="text-xs line-clamp-1">{location}</span>
+                          </div>
+                          <div className="flex items-center justify-between pt-0.5">
+                            <div>
+                              <span className="text-sm font-bold text-slate-800">
+                                ₨{price.toLocaleString()}
+                              </span>
+                              <span className="text-xs text-slate-500 ml-1">for 2 nights</span>
                             </div>
-                            <div className="flex items-center justify-between pt-1">
-                              <div>
-                                <span className="text-sm font-bold text-slate-800">
-                                  ₨{price.toLocaleString()}
-                                </span>
-                                <span className="text-xs text-slate-500 ml-1">for 2 nights</span>
-                              </div>
-                              <div className="flex items-center space-x-1">
-                                <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                                <span className="text-xs font-medium text-slate-700">{rating}</span>
-                              </div>
+                            <div className="flex items-center space-x-1">
+                              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                              <span className="text-xs font-medium text-slate-700">{rating}</span>
                             </div>
                           </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                   )
                         })}
                         </div>
