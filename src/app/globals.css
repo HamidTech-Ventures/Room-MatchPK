@@ -186,3 +186,35 @@
     transform: scale(1);
   }
 }
+
+/* Hide scrollbars for horizontal property scrolling */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+
+/* Line clamp utilities for text truncation */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+/* Smooth scrolling for property containers */
+.property-scroll-container {
+  scroll-behavior: smooth;
+}
+
+/* Navigation arrow hover effects */
+.nav-arrow {
+  transition: all 0.2s ease-in-out;
+}
+
+.nav-arrow:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.2);
+}
