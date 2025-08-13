@@ -56,11 +56,11 @@ function FindRoomsContent() {
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1)
   const router = useRouter()
   
-  // Initial filter values
+  // Initial filter values - no default price range to show all properties
   const initialFilters = {
     propertyType: "",
     genderPreference: "",
-    priceRange: [1000, 50000],
+    priceRange: [0, 999999], // Very wide range to include all properties by default
     amenities: [] as string[],
     sortBy: "relevance",
     searchQuery: "", // For hostel name, city, area search
@@ -135,9 +135,17 @@ function FindRoomsContent() {
           params.append('genderPreference', filters.genderPreference)
         }
 
-        // Add price range filter
-        params.append('minPrice', (filters.priceRange?.[0] ?? 1000).toString())
-        params.append('maxPrice', (filters.priceRange?.[1] ?? 50000).toString())
+        // Add price range filter only if it's different from the very wide default
+        const defaultMin = 0;
+        const defaultMax = 999999;
+        const currentMin = filters.priceRange?.[0] ?? defaultMin;
+        const currentMax = filters.priceRange?.[1] ?? defaultMax;
+
+        // Only add price filters if they're different from the very wide defaults
+        if (currentMin !== defaultMin || currentMax !== defaultMax) {
+          params.append('minPrice', currentMin.toString())
+          params.append('maxPrice', currentMax.toString())
+        }
 
         // Add amenities filter
         if (filters.amenities.length > 0) {
@@ -221,9 +229,17 @@ function FindRoomsContent() {
       if (filters.genderPreference) {
         params.append('genderPreference', filters.genderPreference)
       }
+      // Only add price filters if they're different from the very wide defaults
       if (filters.priceRange) {
-        params.append('minPrice', filters.priceRange[0].toString())
-        params.append('maxPrice', filters.priceRange[1].toString())
+        const defaultMin = 0;
+        const defaultMax = 999999;
+        const currentMin = filters.priceRange[0];
+        const currentMax = filters.priceRange[1];
+
+        if (currentMin !== defaultMin || currentMax !== defaultMax) {
+          params.append('minPrice', currentMin.toString())
+          params.append('maxPrice', currentMax.toString())
+        }
       }
       if (filters.amenities && filters.amenities.length > 0) {
         params.append('amenities', filters.amenities.join(','))
@@ -622,7 +638,10 @@ function FindRoomsContent() {
                   <h4 className="font-medium text-slate-700">Budget Range (PKR)</h4>
                   <div className="px-2">
                     <Slider
-                      value={filters.priceRange}
+                      value={[
+                        Math.max(1000, Math.min(50000, filters.priceRange[0])),
+                        Math.max(1000, Math.min(50000, filters.priceRange[1]))
+                      ]}
                       onValueChange={(value:any) => {
                         const [min, max] = value
                         if (max - min < 1000) return
@@ -634,8 +653,8 @@ function FindRoomsContent() {
                       className="w-full"
                     />
                     <div className="flex justify-between text-sm text-slate-600 mt-2">
-                      <span>PKR {filters.priceRange[0].toLocaleString()}</span>
-                      <span>PKR {filters.priceRange[1].toLocaleString()}</span>
+                      <span>PKR {Math.max(1000, Math.min(50000, filters.priceRange[0])).toLocaleString()}</span>
+                      <span>PKR {Math.max(1000, Math.min(50000, filters.priceRange[1])).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -757,172 +776,9 @@ function FindRoomsContent() {
       <UnifiedChat isOpen={isChatOpen} onToggle={toggleChat} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="flex flex-col lg:flex-row gap-6 sm:gap-8">
-          {/* Filters Sidebar */}
-          <div className="w-full lg:w-80 space-y-6">
-            <Card className="p-4 sm:p-6">
-              <h3 className="text-lg font-semibold mb-4 flex items-center">
-                <SlidersHorizontal className="w-5 h-5 mr-2" />
-                Filters
-              </h3>
-
-              {/* Search Section */}
-              <div className="space-y-4 mb-6">
-                <h4 className="font-medium text-slate-700 flex items-center">
-                  <Search className="w-4 h-4 mr-2" />
-                  Search
-                </h4>
-                {/* Unified Search Box */}
-                <div className="space-y-2">
-                  <label className="text-sm text-slate-600">Search Hostel Name, City, or Area</label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <Input
-                      placeholder="Search hostels, cities, areas..."
-                      value={filters.searchQuery}
-                      onChange={(e) => handleFilterChange('searchQuery', e.target.value)}
-                      className="pl-8"
-                    />
-                  </div>
-                </div>
-                {/* Property Type */}
-                <div className="space-y-2">
-                  <label className="text-sm text-slate-600">Property Type</label>
-                  <Select
-                    value={filters.propertyType}
-                    onValueChange={(value) => handleFilterChange('propertyType', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select property type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="hostel">Hostel</SelectItem>
-                      <SelectItem value="apartment">Apartment</SelectItem>
-                      <SelectItem value="house">House</SelectItem>
-                      <SelectItem value="office">Office</SelectItem>
-                      <SelectItem value="hostel-mess">Hostel Mess</SelectItem>
-                      <SelectItem value="pg">PG</SelectItem>
-                      <SelectItem value="flat">Flat</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {/* Search Button */}
-                <Button 
-                  className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700"
-                  onClick={() => {
-                    setPagination(prev => ({ ...prev, page: 1 }))
-                  }}
-                >
-                  <Search className="w-4 h-4 mr-2" />
-                  Search Properties
-                </Button>
-              </div>
-
-              {/* Budget Range */}
-              <div className="space-y-4 mb-6">
-                <h4 className="font-medium text-slate-700">Budget Range (PKR)</h4>
-                <div className="px-2">
-                  <Slider
-                    value={filters.priceRange}
-                    onValueChange={(value:any) => {
-                      // Validate range
-                      const [min, max] = value
-                      // Ensure minimum gap between min and max
-                      if (max - min < 1000) {
-                        return // Don't update if range is too small
-                      }
-                      handleFilterChange('priceRange', value)
-                    }}
-                    max={50000}
-                    min={1000}
-                    step={1000}
-                    className={`w-full ${
-                      filters.priceRange[1] - filters.priceRange[0] < 1000
-                        ? 'accent-red-500' 
-                        : 'accent-emerald-500'
-                    }`}
-                  />
-                  <div className="flex justify-between text-sm text-slate-600 mt-2">
-                    <span>₨{filters.priceRange[0].toLocaleString()}</span>
-                    <span>₨{filters.priceRange[1].toLocaleString()}</span>
-                  </div>
-                  {filters.priceRange[1] - filters.priceRange[0] < 1000 && (
-                    <div className="text-red-500 text-xs mt-1 p-2 bg-red-50 border border-red-200 rounded">
-                      ⚠️ Minimum price range should be at least ₨1,000
-                    </div>
-                  )}
-                  <div className="text-xs text-slate-500 mt-1">
-                    Range: ₨1,000 - ₨50,000
-                  </div>
-                </div>
-              </div>
-
-              {/* Gender Preference */}
-              <div className="space-y-3 mb-6">
-                <h4 className="font-medium text-slate-700">Gender Preference</h4>
-                <div className="space-y-2">
-                  {[
-                    { label: "Boys", value: "boys" },
-                    { label: "Girls", value: "girls" },
-                    { label: "Mixed", value: "mixed" }
-                  ].map((gender) => (
-                    <div key={gender.value} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={gender.value}
-                        checked={filters.genderPreference === gender.value}
-                        onCheckedChange={(checked) =>
-                          handleFilterChange('genderPreference', checked ? gender.value : "")
-                        }
-                      />
-                      <label htmlFor={gender.value} className="text-sm text-slate-700 cursor-pointer">
-                        {gender.label}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Amenities */}
-              <div className="space-y-3">
-                <h4 className="font-medium text-slate-700">Amenities</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
-                  {amenityOptions.map((amenity) => (
-                    <div key={amenity.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={amenity.id}
-                        checked={filters.amenities.includes(amenity.id)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            handleFilterChange('amenities', [...filters.amenities, amenity.id])
-                          } else {
-                            handleFilterChange('amenities', filters.amenities.filter((a) => a !== amenity.id))
-                          }
-                        }}
-                      />
-                      <label htmlFor={amenity.id} className="text-sm text-slate-700 cursor-pointer flex items-center">
-                        <amenity.icon className="w-4 h-4 mr-1" />
-                        {amenity.label}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Clear Filters Button */}
-              <div className="pt-4 border-t border-slate-200">
-                <Button
-                  variant="outline"
-                  onClick={handleClearFilters}
-                  className="w-full text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-                >
-                  Clear All Filters
-                </Button>
-              </div>
-            </Card>
-          </div>
-
-          {/* Results Section */}
-          <div className="flex-1">
+        <div className="flex flex-col gap-6 sm:gap-8">
+          {/* Results Section - Now full width since sidebar is hidden */}
+          <div className="w-full">
             {/* Results Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
               <div>

@@ -86,10 +86,14 @@ export async function GET(request: NextRequest) {
       filter.genderPreference = genderPreference
     }
 
-    // Always apply price filter with default 1000-50000 if not set
-    const min = minPrice ? parseInt(minPrice) : 1000;
-    const max = maxPrice ? parseInt(maxPrice) : 50000;
-    filter['pricing.pricePerBed'] = { $gte: min, $lte: max };
+    // Apply price filter only if it's not the default range or very wide range
+    const isDefaultRange = (minPrice === '1000' && maxPrice === '50000') ||
+                           (minPrice === '0' && maxPrice === '999999');
+    if (minPrice && maxPrice && !isDefaultRange) {
+      const min = parseInt(minPrice);
+      const max = parseInt(maxPrice);
+      filter['pricing.pricePerBed'] = { $gte: min, $lte: max };
+    }
 
     if (amenities && amenities.length > 0) {
       filter.amenities = { $in: amenities }
