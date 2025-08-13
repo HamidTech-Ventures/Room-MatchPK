@@ -3,6 +3,17 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 import { authenticateUser, findUserByEmail, createUser, initializeDefaultAdmin } from './auth'
 
+// Dynamic NEXTAUTH_URL based on environment
+const getNextAuthUrl = () => {
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`
+  }
+  if (process.env.NEXTAUTH_URL) {
+    return process.env.NEXTAUTH_URL
+  }
+  return 'http://localhost:3000'
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
