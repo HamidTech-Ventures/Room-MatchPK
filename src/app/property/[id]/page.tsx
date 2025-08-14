@@ -161,8 +161,17 @@ export default function PropertyDetailPage() {
 
   const openEmail = (email: string) => {
     const subject = `Inquiry about ${propertyData?.title}`
-    const body = `Hi,\n\nI'm interested in your property "${propertyData?.title}" at ${propertyData?.address?.area}, ${propertyData?.address?.city}.\n\nCan you provide more details about:\n- Availability\n- Viewing schedule\n- Any additional information\n\nThank you!`
-    
+    const body = `Hi,
+
+I'm interested in your property "${propertyData?.title}" at ${propertyData?.address?.area}, ${propertyData?.address?.city}.
+
+Can you provide more details about:
+- Availability
+- Viewing schedule
+- Any additional information
+
+Thank you!`
+
     const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
     window.open(mailtoUrl, "_blank")
   }
@@ -372,168 +381,328 @@ export default function PropertyDetailPage() {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main Content Container with improved spacing */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Back Button */}
         <Button
           variant="ghost"
-          className="mb-6 text-slate-600 hover:text-emerald-600 cursor-pointer"
+          className="mb-8 text-slate-600 hover:text-emerald-600 cursor-pointer"
           onClick={() => window.history.length > 1 ? window.history.back() : null}
         >
             <ArrowLeft className="w-4 h-4 mr-2" />
           Go Back
         </Button>
 
+        {/* New Airbnb-style Image Gallery */}
+        <div className="mb-8">
+          <div className="grid grid-cols-4 gap-2 h-96 rounded-xl overflow-hidden">
+            {(() => {
+              const images = getImageUrls()
+              const mainImage = images[0] || '/placeholder.svg'
+              const sideImages = images.slice(1, 5) // Show up to 4 additional images
+
+              return (
+                <>
+                  {/* Main large image - takes 2 columns */}
+                  <div className="col-span-2 relative group cursor-pointer" onClick={() => setShowAllImages(true)}>
+                    <Image
+                      src={mainImage}
+                      alt={propertyData.title || 'Property image'}
+                      fill
+                      className="object-cover group-hover:brightness-90 transition-all duration-300"
+                    />
+                    {/* Badges on main image */}
+                    <div className="absolute top-4 left-4 flex flex-col space-y-2">
+                      <Badge className="bg-emerald-600 text-white">{propertyData.propertyType}</Badge>
+                      {propertyData.isVerified && <Badge className="bg-green-500 text-white">✓ Verified</Badge>}
+                    </div>
+                    <div className="absolute top-4 right-4">
+                      <Badge className="bg-blue-100 text-blue-700">{propertyData.genderPreference}</Badge>
+                    </div>
+                  </div>
+
+                  {/* Side images grid - takes 2 columns */}
+                  <div className="col-span-2 grid grid-cols-2 gap-2">
+                    {sideImages.map((imageUrl: string, index: number) => (
+                      <div
+                        key={index}
+                        className="relative group cursor-pointer"
+                        onClick={() => setShowAllImages(true)}
+                      >
+                        <Image
+                          src={imageUrl || "/placeholder.svg"}
+                          alt={propertyData.title ? `${propertyData.title} image ${index + 2}` : `Property image ${index + 2}`}
+                          fill
+                          className="object-cover group-hover:brightness-90 transition-all duration-300"
+                        />
+                        {/* Show "View all photos" on last image if there are more */}
+                        {index === 3 && images.length > 5 && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <div className="text-white text-center">
+                              <Camera className="w-6 h-6 mx-auto mb-1" />
+                              <span className="text-sm font-medium">+{images.length - 5} more</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Fill empty slots if less than 4 side images */}
+                    {Array.from({ length: Math.max(0, 4 - sideImages.length) }).map((_, index) => (
+                      <div key={`empty-${index}`} className="bg-slate-100 rounded-lg"></div>
+                    ))}
+                  </div>
+                </>
+              )
+            })()}
+          </div>
+
+          {/* View all photos button */}
+          <div className="mt-4 flex justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setShowAllImages(true)}
+              className="bg-white border-slate-300 text-slate-700 hover:bg-slate-50"
+            >
+              <Camera className="w-4 h-4 mr-2" />
+              Show all {getImageUrls().length} photos
+            </Button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Image Gallery */}
-            <Card className="overflow-hidden border-0 shadow-xl">
-              <div className="relative h-96">
-                {(() => {
-                  const images = getImageUrls()
-                  const currentImage = images[currentImageIndex] || '/placeholder.svg'
-                  return (
-                    <Image
-                      src={currentImage}
-                      alt={propertyData.title || 'Property image'}
-                      fill
-                      className="object-cover"
-                    />
-                  )
-                })()}
 
-                {/* Image Navigation */}
-                <button
-                  onClick={prevImage}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-all cursor-pointer"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={nextImage}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-all cursor-pointer"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-
-                {/* Image Counter */}
-                <div className="absolute bottom-4 left-4 bg-black/50 backdrop-blur-sm rounded-full px-3 py-1 text-white text-sm">
-                  {currentImageIndex + 1} / {getImageUrls().length}
-                </div>
-
-                {/* View All Images Button */}
-                <button
-                  onClick={() => setShowAllImages(true)}
-                  className="absolute bottom-4 right-4 bg-white/90 hover:bg-white text-slate-800 rounded-lg px-4 py-2 text-sm font-medium transition-all cursor-pointer"
-                >
-                  <Camera className="w-4 h-4 mr-2 inline" />
-                  View All Photos
-                </button>
-
-                {/* Badges */}
-                <div className="absolute top-4 left-4 flex flex-col space-y-2">
-                  <Badge className="bg-emerald-600 text-white">{propertyData.propertyType}</Badge>
-                  {propertyData.isVerified && <Badge className="bg-green-500 text-white">✓ Verified</Badge>}
-                </div>
-
-                <div className="absolute top-4 right-4">
-                  <Badge className="bg-blue-100 text-blue-700">{propertyData.genderPreference}</Badge>
-                </div>
-              </div>
-
-              {/* Thumbnail Strip */}
-              <div className="p-4 bg-white">
-                <div className="flex space-x-2 overflow-x-auto">
-                  {getImageUrls().map((imageUrl: string, index: number) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentImageIndex(index)}
-                      className={`flex-shrink-0 w-20 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                        index === currentImageIndex ? "border-emerald-500" : "border-slate-200"
-                      }`}
-                    >
-                      <Image
-                        src={imageUrl || "/placeholder.svg"}
-                        alt={propertyData.title ? `${propertyData.title} thumbnail ${index + 1}` : `Thumbnail ${index + 1}`}
-                        width={80}
-                        height={64}
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </Card>
-
-            {/* Property Details */}
-            <Card className="border-0 shadow-lg">
-              <CardContent className="p-8">
-                <div className="flex items-start justify-between mb-6">
-                  <div>
-                    <h1 className="text-3xl font-bold text-slate-800 mb-2">{propertyData.title}</h1>
-                    <div className="flex items-center text-slate-600 mb-2">
-                      <MapPin className="w-5 h-5 mr-2" />
-                      <span>{propertyData.address ? `${propertyData.address.area || ''}, ${propertyData.address.city || ''}` : 'Unknown Location'}</span>
+            {/* Property Header Information */}
+            <div className="mb-8">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <h1 className="text-3xl font-bold text-slate-900 mb-2">{propertyData.title}</h1>
+                  <div className="flex items-center flex-wrap gap-4 text-sm">
+                    <div className="flex items-center space-x-1">
+                      <Star className="w-4 h-4 fill-black text-black" />
+                      <span className="font-semibold">{propertyData.rating || 'New'}</span>
+                      {propertyData.totalReviews > 0 && (
+                        <>
+                          <span>·</span>
+                          <button className="underline hover:no-underline">
+                            {propertyData.totalReviews} review{propertyData.totalReviews !== 1 ? 's' : ''}
+                          </button>
+                        </>
+                      )}
                     </div>
-                    {propertyData.nearbyUniversity && (
-                      <div className="text-emerald-600 font-medium">📍 Near {propertyData.nearbyUniversity}</div>
-                    )}
+                    <span>·</span>
+                    <div className="flex items-center space-x-1">
+                      <MapPin className="w-4 h-4" />
+                      <button className="underline hover:no-underline">
+                        {propertyData.address ? `${propertyData.address.area || ''}, ${propertyData.address.city || ''}` : 'Unknown Location'}
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="sm">
-                      <Heart className="w-4 h-4" />
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Share2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  {propertyData.nearbyUniversity && (
+                    <div className="text-emerald-600 font-medium mt-2">📍 Near {propertyData.nearbyUniversity}</div>
+                  )}
                 </div>
+                <div className="flex items-center space-x-2 ml-4">
+                  <Button variant="ghost" size="sm" className="text-slate-600 hover:bg-slate-100">
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Share
+                  </Button>
+                  <Button variant="ghost" size="sm" className="text-slate-600 hover:bg-slate-100">
+                    <Heart className="w-4 h-4 mr-2" />
+                    Save
+                  </Button>
+                </div>
+              </div>
 
-                <div className="flex items-center space-x-4 mb-6">
-                  <div className="flex items-center space-x-1 bg-yellow-50 px-3 py-1 rounded-full">
-                    <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                    <span className="font-semibold">{propertyData.rating || 0}</span>
-                    <span className="text-slate-600">
-                      {propertyData.totalReviews ? `(${propertyData.totalReviews} reviews)` : '(No reviews)'}
-                    </span>
-                  </div>
-                  <div className="text-sm text-slate-600">
-                    {propertyData.propertyType === "hostel-mess" ? 
-                      `🍽️ ${propertyData.availableRooms || 0} of ${propertyData.totalRooms || 0} spots available` :
-                      `🏠 ${propertyData.availableRooms || 0} of ${propertyData.totalRooms || 0} rooms available`
+              {/* Property Type and Availability Info */}
+              <div className="flex items-center space-x-4 text-sm text-slate-600 mb-6">
+                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                  {propertyData.propertyType}
+                </Badge>
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                  {propertyData.genderPreference}
+                </Badge>
+                {propertyData.isVerified && (
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    ✓ Verified
+                  </Badge>
+                )}
+                <span>
+                  {propertyData.propertyType === "hostel-mess" ?
+                    `🍽️ ${propertyData.availableRooms || 0} of ${propertyData.totalRooms || 0} spots available` :
+                    `🏠 ${propertyData.availableRooms || 0} of ${propertyData.totalRooms || 0} rooms available`
+                  }
+                </span>
+              </div>
+            </div>
+
+            {/* Property Description */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-slate-900 mb-4">About this place</h2>
+              <p className="text-slate-600 leading-relaxed">{propertyData.description || 'No description available.'}</p>
+            </div>
+
+            {/* What this place offers - Amenities */}
+            {Array.isArray(propertyData.amenities) && propertyData.amenities.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold text-slate-900 mb-6">What this place offers</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {propertyData.amenities.map((amenity: string, index: number) => {
+                    // Map amenities to appropriate icons
+                    const getAmenityIcon = (amenityName: string) => {
+                      const name = amenityName.toLowerCase()
+                      if (name.includes('wifi') || name.includes('internet')) return <Wifi className="w-6 h-6" />
+                      if (name.includes('parking') || name.includes('car')) return <Car className="w-6 h-6" />
+                      if (name.includes('food') || name.includes('meal') || name.includes('kitchen')) return <Utensils className="w-6 h-6" />
+                      if (name.includes('ac') || name.includes('air') || name.includes('cooling')) return <AirVent className="w-6 h-6" />
+                      if (name.includes('security') || name.includes('guard')) return <Shield className="w-6 h-6" />
+                      if (name.includes('laundry') || name.includes('washing')) return <Home className="w-6 h-6" />
+                      return <CheckCircle className="w-6 h-6" />
                     }
-                  </div>
-                </div>
 
-                <Separator className="my-6" />
-
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-800 mb-4">About This Property</h3>
-                  <p className="text-slate-600 leading-relaxed">{propertyData.description || 'No description available.'}</p>
-                </div>
-
-                <Separator className="my-6" />
-
-                {/* Amenities - Only show if amenities exist */}
-                {Array.isArray(propertyData.amenities) && propertyData.amenities.length > 0 && (
-                  <>
-                    <div>
-                      <h3 className="text-xl font-semibold text-slate-800 mb-4">Amenities</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {propertyData.amenities.map((amenity: string, index: number) => (
-                          <div key={index} className="flex items-center space-x-3">
-                            <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                            <span className="text-slate-600">{amenity}</span>
-                          </div>
-                        ))}
+                    return (
+                      <div key={index} className="flex items-center space-x-4 py-3">
+                        <div className="text-slate-600 flex-shrink-0">
+                          {getAmenityIcon(amenity)}
+                        </div>
+                        <span className="text-slate-700 font-medium">{amenity}</span>
                       </div>
+                    )
+                  })}
+                </div>
+
+                {/* Show all amenities button if there are many */}
+                {propertyData.amenities.length > 10 && (
+                  <div className="mt-6">
+                    <Button variant="outline" className="border-slate-300 text-slate-700 hover:bg-slate-50">
+                      Show all {propertyData.amenities.length} amenities
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Where you'll sleep - Room Details */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-slate-900 mb-6">Where you'll sleep</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Room/Bed Information */}
+                <div className="border border-slate-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+                  <div className="aspect-square bg-slate-100 rounded-lg mb-4 relative overflow-hidden">
+                    {(() => {
+                      const images = getImageUrls()
+                      const roomImage = images.find((img: string) => img) || '/placeholder.svg'
+                      return (
+                        <Image
+                          src={roomImage}
+                          alt="Bedroom"
+                          fill
+                          className="object-cover"
+                        />
+                      )
+                    })()}
+                  </div>
+                  <h3 className="font-semibold text-slate-900 mb-2">
+                    {propertyData.propertyType === "hostel-mess" ? "Mess Hall" : "Bedroom"}
+                  </h3>
+                  <p className="text-sm text-slate-600">
+                    {propertyData.propertyType === "hostel-mess"
+                      ? `Dining space for ${propertyData.totalRooms || 0} people`
+                      : `${propertyData.totalRooms || 0} beds available`
+                    }
+                  </p>
+                </div>
+
+                {/* Additional room info if available */}
+                {propertyData.propertyType !== "hostel-mess" && propertyData.totalRooms > 1 && (
+                  <div className="border border-slate-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+                    <div className="aspect-square bg-slate-100 rounded-lg mb-4 flex items-center justify-center">
+                      <Users className="w-12 h-12 text-slate-400" />
                     </div>
-                    <Separator className="my-6" />
-                  </>
+                    <h3 className="font-semibold text-slate-900 mb-2">Shared Rooms</h3>
+                    <p className="text-sm text-slate-600">
+                      Multiple occupancy rooms available
+                    </p>
+                  </div>
                 )}
 
-                {/* Mess Specific Details */}
-                {propertyData.propertyType === "hostel-mess" && (
+                {/* Common area if applicable */}
+                {propertyData.amenities?.some((amenity: string) =>
+                  amenity.toLowerCase().includes('common') ||
+                  amenity.toLowerCase().includes('lounge') ||
+                  amenity.toLowerCase().includes('tv')
+                ) && (
+                  <div className="border border-slate-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+                    <div className="aspect-square bg-slate-100 rounded-lg mb-4 flex items-center justify-center">
+                      <Home className="w-12 h-12 text-slate-400" />
+                    </div>
+                    <h3 className="font-semibold text-slate-900 mb-2">Common Area</h3>
+                    <p className="text-sm text-slate-600">
+                      Shared living space with amenities
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Host Information Section */}
+            {propertyData.contactInfo && (
+              <div className="mb-8 pb-8 border-b border-slate-200">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center">
+                      <User className="w-7 h-7 text-emerald-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold text-slate-900">Hosted by Property Owner</h2>
+                      <p className="text-slate-600">
+                        {propertyData.isVerified ? 'Verified host' : 'Host'} •
+                        {propertyData.totalReviews > 0 ? ` ${propertyData.totalReviews} reviews` : ' New host'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {propertyData.contactInfo.phone && (
+                      <Button
+                        variant="outline"
+                        onClick={() => openWhatsApp(propertyData.contactInfo.phone)}
+                        className="border-slate-300 text-slate-700 hover:bg-slate-50"
+                      >
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Contact host
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Host details */}
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                  <div className="flex items-center space-x-2">
+                    <Star className="w-4 h-4 text-slate-400" />
+                    <span className="text-slate-600">
+                      {propertyData.rating ? `${propertyData.rating} rating` : 'No ratings yet'}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-slate-400" />
+                    <span className="text-slate-600">
+                      {propertyData.isVerified ? 'Identity verified' : 'Verification pending'}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Shield className="w-4 h-4 text-slate-400" />
+                    <span className="text-slate-600">Trusted by RoomMatch PK</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Mess Specific Details */}
+            {propertyData.propertyType === "hostel-mess" && (
+              <Card className="border-0 shadow-lg mb-8">
+                <CardContent className="p-8">
                   <div>
                     <h3 className="text-xl font-semibold text-slate-800 mb-4 flex items-center">
                       <Utensils className="w-6 h-6 mr-2 text-emerald-600" />
@@ -577,284 +746,18 @@ export default function PropertyDetailPage() {
                           <Utensils className="w-5 h-5 mr-2 text-emerald-600" />
                           Food & Meal Information
                         </h4>
-                        
-                        {/* Available Meals with Pricing */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                          {(propertyData.foodOptions?.breakfast || propertyData.foodTimings?.breakfast?.enabled) && (
-                            <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                  <CheckCircle className="w-4 h-4 text-orange-600" />
-                                  <span className="text-sm font-medium text-orange-700">Breakfast</span>
-                                </div>
-                              </div>
-                              {propertyData.foodPricing?.breakfast && Number(propertyData.foodPricing.breakfast) > 0 && (
-                                <div className="text-lg font-bold text-orange-800">₨{Number(propertyData.foodPricing.breakfast).toLocaleString()}</div>
-                              )}
-                              {(propertyData.foodTimings?.breakfast?.startTime && propertyData.foodTimings?.breakfast?.endTime) ? (
-                                <div className="text-xs text-orange-600 mt-1 flex items-center">
-                                  <Clock className="w-3 h-3 mr-1" />
-                                  {propertyData.foodTimings.breakfast.startTime} - {propertyData.foodTimings.breakfast.endTime}
-                                </div>
-                              ) : propertyData.foodTimings?.breakfast?.time && (
-                                <div className="text-xs text-orange-600 mt-1 flex items-center">
-                                  <Clock className="w-3 h-3 mr-1" />
-                                  {propertyData.foodTimings.breakfast.time}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          
-                          {(propertyData.foodOptions?.lunch || propertyData.foodTimings?.lunch?.enabled) && (
-                            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                  <CheckCircle className="w-4 h-4 text-green-600" />
-                                  <span className="text-sm font-medium text-green-700">Lunch</span>
-                                </div>
-                              </div>
-                              {propertyData.foodPricing?.lunch && Number(propertyData.foodPricing.lunch) > 0 && (
-                                <div className="text-lg font-bold text-green-800">₨{Number(propertyData.foodPricing.lunch).toLocaleString()}</div>
-                              )}
-                              {(propertyData.foodTimings?.lunch?.startTime && propertyData.foodTimings?.lunch?.endTime) ? (
-                                <div className="text-xs text-green-600 mt-1 flex items-center">
-                                  <Clock className="w-3 h-3 mr-1" />
-                                  {propertyData.foodTimings.lunch.startTime} - {propertyData.foodTimings.lunch.endTime}
-                                </div>
-                              ) : propertyData.foodTimings?.lunch?.time && (
-                                <div className="text-xs text-green-600 mt-1 flex items-center">
-                                  <Clock className="w-3 h-3 mr-1" />
-                                  {propertyData.foodTimings.lunch.time}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          
-                          {(propertyData.foodOptions?.dinner || propertyData.foodTimings?.dinner?.enabled) && (
-                            <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                  <CheckCircle className="w-4 h-4 text-purple-600" />
-                                  <span className="text-sm font-medium text-purple-700">Dinner</span>
-                                </div>
-                              </div>
-                              {propertyData.foodPricing?.dinner && Number(propertyData.foodPricing.dinner) > 0 && (
-                                <div className="text-lg font-bold text-purple-800">₨{Number(propertyData.foodPricing.dinner).toLocaleString()}</div>
-                              )}
-                              {(propertyData.foodTimings?.dinner?.startTime && propertyData.foodTimings?.dinner?.endTime) ? (
-                                <div className="text-xs text-purple-600 mt-1 flex items-center">
-                                  <Clock className="w-3 h-3 mr-1" />
-                                  {propertyData.foodTimings.dinner.startTime} - {propertyData.foodTimings.dinner.endTime}
-                                </div>
-                              ) : propertyData.foodTimings?.dinner?.time && (
-                                <div className="text-xs text-purple-600 mt-1 flex items-center">
-                                  <Clock className="w-3 h-3 mr-1" />
-                                  {propertyData.foodTimings.dinner.time}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          
-                          {(propertyData.foodOptions?.snacks || propertyData.foodTimings?.snacks?.enabled) && (
-                            <div className="p-4 bg-pink-50 rounded-lg border border-pink-200">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                  <CheckCircle className="w-4 h-4 text-pink-600" />
-                                  <span className="text-sm font-medium text-pink-700">Snacks</span>
-                                </div>
-                              </div>
-                              {propertyData.foodPricing?.snacks && Number(propertyData.foodPricing.snacks) > 0 && (
-                                <div className="text-lg font-bold text-pink-800">₨{Number(propertyData.foodPricing.snacks).toLocaleString()}</div>
-                              )}
-                              {(propertyData.foodTimings?.snacks?.startTime && propertyData.foodTimings?.snacks?.endTime) ? (
-                                <div className="text-xs text-pink-600 mt-1 flex items-center">
-                                  <Clock className="w-3 h-3 mr-1" />
-                                  {propertyData.foodTimings.snacks.startTime} - {propertyData.foodTimings.snacks.endTime}
-                                </div>
-                              ) : propertyData.foodTimings?.snacks?.time && (
-                                <div className="text-xs text-pink-600 mt-1 flex items-center">
-                                  <Clock className="w-3 h-3 mr-1" />
-                                  {propertyData.foodTimings.snacks.time}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Food Types */}
-                        {propertyData.foodOptions && (propertyData.foodOptions.veg || propertyData.foodOptions.nonVeg || propertyData.foodOptions.halal || propertyData.foodOptions.customDiet) && (
-                          <div className="mb-4">
-                            <h5 className="text-md font-semibold text-slate-600 mb-3">Food Types Available</h5>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                              {propertyData.foodOptions.veg && (
-                              <div className="flex items-center space-x-2 p-2 bg-green-50 rounded-lg border border-green-200">
-                                <CheckCircle className="w-4 h-4 text-green-600" />
-                                <span className="text-sm font-medium text-green-700">Vegetarian</span>
-                              </div>
-                            )}
-                            {propertyData.foodOptions.nonVeg && (
-                              <div className="flex items-center space-x-2 p-2 bg-red-50 rounded-lg border border-red-200">
-                                <CheckCircle className="w-4 h-4 text-red-600" />
-                                <span className="text-sm font-medium text-red-700">Non-Vegetarian</span>
-                              </div>
-                            )}
-                            {propertyData.foodOptions.halal && (
-                              <div className="flex items-center space-x-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
-                                <CheckCircle className="w-4 h-4 text-blue-600" />
-                                <span className="text-sm font-medium text-blue-700">Halal</span>
-                              </div>
-                            )}
-                            {propertyData.foodOptions.customDiet && (
-                              <div className="flex items-center space-x-2 p-2 bg-purple-50 rounded-lg border border-purple-200">
-                                <CheckCircle className="w-4 h-4 text-purple-600" />
-                                <span className="text-sm font-medium text-purple-700">Custom Diet</span>
-                              </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-
-                      </div>
-                    )}
-
-                    {/* Delivery Information */}
-                    {propertyData.deliveryAvailable && (
-                      <div className="mb-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                        <h4 className="font-semibold text-indigo-700 mb-2 flex items-center">
-                          <CheckCircle className="w-5 h-5 mr-2" />
-                          Delivery Available
-                        </h4>
-                        <div className="space-y-2 text-sm text-slate-700">
-                          {propertyData.deliveryCharges && (
-                            <div>Delivery Charges: ₨{propertyData.deliveryCharges}</div>
-                          )}
-                          {propertyData.coverageArea && (
-                            <div>Coverage Area: {propertyData.coverageArea}</div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Trial Available */}
-                    {propertyData.trialAvailable && (
-                      <div className="mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                        <h4 className="font-semibold text-yellow-700 flex items-center">
-                          <CheckCircle className="w-5 h-5 mr-2" />
-                          Trial Available
-                        </h4>
-                        <p className="text-sm text-slate-600 mt-1">Try our food service before committing!</p>
-                      </div>
-                    )}
-
-                    {/* Payment Options */}
-                    {propertyData.paymentOptions && (
-                      <div className="mb-6">
-                        <h4 className="text-lg font-semibold text-slate-700 mb-3">Payment Options</h4>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                          {propertyData.paymentOptions.cash && (
-                            <div className="flex items-center space-x-2 p-3 bg-green-50 rounded-lg border border-green-200">
-                              <CheckCircle className="w-4 h-4 text-green-600" />
-                              <span className="text-sm font-medium text-green-700">Cash</span>
-                            </div>
-                          )}
-                          {propertyData.paymentOptions.jazzcash && (
-                            <div className="flex items-center space-x-2 p-3 bg-purple-50 rounded-lg border border-purple-200">
-                              <CheckCircle className="w-4 h-4 text-purple-600" />
-                              <span className="text-sm font-medium text-purple-700">JazzCash</span>
-                            </div>
-                          )}
-                          {propertyData.paymentOptions.easypaisa && (
-                            <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                              <CheckCircle className="w-4 h-4 text-blue-600" />
-                              <span className="text-sm font-medium text-blue-700">Easypaisa</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Additional Details */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {propertyData.foodHygiene && (
-                        <div>
-                          <h4 className="text-md font-semibold text-slate-700 mb-2">Hygiene Standards</h4>
-                          <p className="text-slate-600 text-sm">{propertyData.foodHygiene}</p>
-                        </div>
-                      )}
-                      
-                      {propertyData.foodStaff && (
-                        <div>
-                          <h4 className="text-md font-semibold text-slate-700 mb-2">Kitchen Staff</h4>
-                          <p className="text-slate-600 text-sm">{propertyData.foodStaff}</p>
-                        </div>
-                      )}
-
-                      {propertyData.sampleMenu && (
-                        <div>
-                          <h4 className="text-md font-semibold text-slate-700 mb-2">Sample Menu</h4>
-                          <p className="text-slate-600 text-sm">{propertyData.sampleMenu}</p>
-                        </div>
-                      )}
-
-                      {propertyData.hygieneCertification && (
-                        <div>
-                          <h4 className="text-md font-semibold text-slate-700 mb-2">Hygiene Certification</h4>
-                          <p className="text-slate-600 text-sm">{propertyData.hygieneCertification}</p>
-                        </div>
-                      )}
-
-                      {propertyData.foodCapacity && (
-                        <div>
-                          <h4 className="text-md font-semibold text-slate-700 mb-2">Food Service Capacity</h4>
-                          <p className="text-slate-600 text-sm">{propertyData.foodCapacity} people</p>
-                        </div>
-                      )}
-
-                      {propertyData.monthlyCharges && (
-                        <div>
-                          <h4 className="text-md font-semibold text-slate-700 mb-2">Monthly Charges</h4>
-                          <p className="text-slate-600 text-sm">₨{Number(propertyData.monthlyCharges).toLocaleString()}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Meals Offered */}
-                    {Array.isArray(propertyData.mealsOffered) && propertyData.mealsOffered.length > 0 && (
-                      <div className="mt-6">
-                        <h4 className="text-md font-semibold text-slate-700 mb-3">Meals Offered</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {propertyData.mealsOffered.map((meal: string, index: number) => (
-                            <Badge key={index} variant="secondary" className="bg-emerald-100 text-emerald-700">
-                              {meal}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {propertyData.foodMenuRotation && (
-                      <div className="mt-4 p-3 bg-emerald-50 rounded-lg border border-emerald-200">
-                        <div className="flex items-center space-x-2">
-                          <CheckCircle className="w-5 h-5 text-emerald-600" />
-                          <span className="font-semibold text-emerald-700">Weekly Menu Rotation Available</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {propertyData.foodSpecialRequirements && (
-                      <div className="mt-6">
-                        <h4 className="text-md font-semibold text-slate-700 mb-2">Special Requirements & Notes</h4>
-                        <p className="text-slate-600 text-sm">{propertyData.foodSpecialRequirements}</p>
+                        <p className="text-slate-600">Food options and pricing information available.</p>
                       </div>
                     )}
                   </div>
-                )}
+                </CardContent>
+              </Card>
+            )}
 
-                <Separator className="my-6" />
-
-                {/* Food Service Details */}
-                {(propertyData.propertyType === "hostel") && propertyData.foodService && (
+            {/* Food Service Details */}
+            {(propertyData.propertyType === "hostel") && propertyData.foodService && (
+              <Card className="border-0 shadow-lg mb-8">
+                <CardContent className="p-8">
                   <div>
                     <h3 className="text-xl font-semibold text-slate-800 mb-4 flex items-center">
                       <Utensils className="w-6 h-6 mr-2 text-emerald-600" />
@@ -992,12 +895,14 @@ export default function PropertyDetailPage() {
                       </div>
                     )}
                   </div>
-                )}
+                </CardContent>
+              </Card>
+            )}
 
-                <Separator className="my-6" />
-
-                {/* Additional Pricing Information */}
-                {(propertyData.pricing?.maintenanceCharges || propertyData.pricing?.electricityCharges || propertyData.pricing?.waterCharges) && (
+            {/* Additional Pricing Information */}
+            {(propertyData.pricing?.maintenanceCharges || propertyData.pricing?.electricityCharges || propertyData.pricing?.waterCharges) && (
+              <Card className="border-0 shadow-lg mb-8">
+                <CardContent className="p-8">
                   <div>
                     <h3 className="text-xl font-semibold text-slate-800 mb-4">Additional Charges</h3>
                     <div className="space-y-3">
@@ -1021,10 +926,13 @@ export default function PropertyDetailPage() {
                       )}
                     </div>
                   </div>
-                )}
+                </CardContent>
+              </Card>
+            )}
 
-                <Separator className="my-6" />
-
+            {/* House Rules and Nearby Places */}
+            <Card className="border-0 shadow-lg mb-8">
+              <CardContent className="p-8">
                 {/* House Rules */}
                 {(() => {
                   // Handle rules - can be array or string
@@ -1232,62 +1140,74 @@ export default function PropertyDetailPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Booking Card */}
-            <Card className="border-0 shadow-xl sticky top-8">
+            {/* Enhanced Booking Card */}
+            <Card className="border border-slate-200 shadow-lg sticky top-8 rounded-xl">
               <CardContent className="p-6">
-                <div className="text-center mb-6">
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <span className="text-3xl font-bold text-emerald-600">
+                {/* Pricing Header */}
+                <div className="mb-6">
+                  <div className="flex items-baseline space-x-1 mb-1">
+                    <span className="text-2xl font-semibold text-slate-900">
                       ₨{propertyData.pricing?.pricePerBed ? propertyData.pricing.pricePerBed.toLocaleString() : '0'}
                     </span>
+                    <span className="text-slate-600">
+                      {propertyData.propertyType === "hostel-mess" ? "/ month" : "/ bed"}
+                    </span>
                   </div>
-                  <span className="text-slate-600">
-                    {propertyData.propertyType === "hostel-mess" ? "per month" : "per bed"}
-                  </span>
+                  {propertyData.totalReviews > 0 && (
+                    <div className="flex items-center space-x-1 text-sm">
+                      <Star className="w-4 h-4 fill-black text-black" />
+                      <span className="font-medium">{propertyData.rating || 'New'}</span>
+                      <span className="text-slate-600">·</span>
+                      <button className="text-slate-600 underline hover:no-underline">
+                        {propertyData.totalReviews} review{propertyData.totalReviews !== 1 ? 's' : ''}
+                      </button>
+                    </div>
+                  )}
                   {propertyData.pricing?.securityDeposit && (
-                    <div className="text-sm text-slate-500 mt-1">
-                      Security Deposit: ₨{propertyData.pricing.securityDeposit.toLocaleString()}
+                    <div className="text-sm text-slate-600 mt-2 p-3 bg-slate-50 rounded-lg">
+                      <span className="font-medium">Security Deposit:</span> ₨{propertyData.pricing.securityDeposit.toLocaleString()}
                     </div>
                   )}
                 </div>
 
+                {/* Action Buttons */}
                 <div className="space-y-3 mb-6">
-                  <Button
-                    onClick={openInMaps}
-                    className="w-full h-12 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold cursor-pointer"
-                  >
-                    <Navigation className="w-5 h-5 mr-2" />
-                    View on Map
-                  </Button>
-                  
-                  {/* Contact Buttons */}
-                  <div className="grid grid-cols-1 gap-2">
-                    {propertyData.contactInfo?.phone && (
-                      <Button
-                        className="w-full h-11 bg-green-600 hover:bg-green-700 text-white font-medium cursor-pointer"
-                        onClick={() => openWhatsApp(propertyData.contactInfo.phone)}
-                      >
-                        <MessageCircle className="w-4 h-4 mr-2" />
-                        WhatsApp Owner
-                      </Button>
-                    )}
+                  {/* Primary Contact Button */}
+                  {propertyData.contactInfo?.phone ? (
+                    <Button
+                      className="w-full h-12 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold cursor-pointer rounded-lg"
+                      onClick={() => openWhatsApp(propertyData.contactInfo.phone)}
+                    >
+                      <MessageCircle className="w-5 h-5 mr-2" />
+                      Contact Host
+                    </Button>
+                  ) : (
+                    <div className="w-full h-12 flex items-center justify-center border border-slate-200 rounded-lg bg-slate-50">
+                      <span className="text-slate-500 text-sm">Contact info not available</span>
+                    </div>
+                  )}
+
+                  {/* Secondary Actions */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={openInMaps}
+                      className="h-11 border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                    >
+                      <Navigation className="w-4 h-4 mr-2" />
+                      Map
+                    </Button>
                     {propertyData.contactInfo?.email && (
                       <Button
                         variant="outline"
-                        className="w-full h-11 border-blue-200 text-blue-600 hover:bg-blue-50 bg-transparent cursor-pointer"
+                        className="h-11 border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
                         onClick={() => openEmail(propertyData.contactInfo.email)}
                       >
                         <Mail className="w-4 h-4 mr-2" />
-                        Email Owner
+                        Email
                       </Button>
                     )}
                   </div>
-                  
-                  {(!propertyData.contactInfo?.phone && !propertyData.contactInfo?.email) && (
-                    <div className="w-full h-11 flex items-center justify-center border border-slate-200 rounded-lg bg-slate-50">
-                      <span className="text-slate-500 text-sm">No contact info available</span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="text-center text-sm text-slate-600">
@@ -1300,50 +1220,7 @@ export default function PropertyDetailPage() {
               </CardContent>
             </Card>
 
-            {/* Owner Details */}
-            {propertyData.contactInfo && (
-              <Card className="border-0 shadow-lg">
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold text-slate-800 mb-4">Property Owner</h3>
-                  <div className="flex items-center space-x-4 mb-4">
-                    <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center">
-                      <User className="w-8 h-8 text-emerald-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-slate-800">Property Owner</h4>
-                      <div className="flex items-center space-x-1 text-sm">
-                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        <span className="font-medium">{propertyData.rating || '-'}</span>
-                        <span className="text-slate-600">• Verified Property</span>
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    {propertyData.contactInfo.phone && (
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start bg-transparent hover:bg-green-50 hover:border-green-300 cursor-pointer"
-                        onClick={() => openWhatsApp(propertyData.contactInfo.phone)}
-                      >
-                        <MessageCircle className="w-4 h-4 mr-2 text-green-600" />
-                        WhatsApp Owner
-                      </Button>
-                    )}
-                    {propertyData.contactInfo.email && (
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start bg-transparent hover:bg-blue-50 hover:border-blue-300 cursor-pointer"
-                        onClick={() => openEmail(propertyData.contactInfo.email)}
-                      >
-                        <Mail className="w-4 h-4 mr-2 text-blue-600" />
-                        Email Owner
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Safety Features */}
             <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-50 to-blue-50">
