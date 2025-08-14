@@ -65,7 +65,9 @@ export const authOptions: NextAuthOptions = {
             access_type: "offline",
             response_type: "code"
           }
-        }
+        },
+        // Explicitly set the redirect URI to debug
+        redirectUri: `${getNextAuthUrl()}/api/auth/callback/google`
       })
     ] : [])
   ],
