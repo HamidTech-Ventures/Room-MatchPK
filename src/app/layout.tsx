@@ -10,24 +10,19 @@ export const metadata: Metadata = {
     icon: [
       '/favicon.ico',
       {
-        url: '/logo.png',
-        sizes: '32x32',
-        type: 'image/png',
-      },
-      {
-        url: '/logo.jpg',
-        sizes: '16x16',
-        type: 'image/jpeg',
+        url: '/RoomMatch Pk Logo.svg',
+        sizes: '48x48',
+        type: 'image/svg+xml',
       },
     ],
     apple: [
       {
-        url: '/logo.png',
+        url: '/RoomMatch Pk Logo.svg',
         sizes: '180x180',
-        type: 'image/png',
+        type: 'image/svg+xml',
       },
     ],
-    shortcut: '/favicon.ico',
+    shortcut: '/RoomMatch Pk Logo.svg',
   },
   manifest: '/site.webmanifest',
   themeColor: '#10b981',
@@ -41,10 +36,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/logo.png" type="image/png" sizes="32x32" />
-        <link rel="icon" href="/logo.jpg" type="image/jpeg" sizes="16x16" />
-        <link rel="apple-touch-icon" href="/logo.png" type="image/png" sizes="180x180" />
+        <link rel="icon" href="/RoomMatch Pk Logo.svg" type="image/svg+xml" sizes="48x48" />
+        <link rel="apple-touch-icon" href="/RoomMatch Pk Logo.svg" type="image/svg+xml" sizes="180x180" />
         <link rel="manifest" href="/site.webmanifest" />
         <meta name="theme-color" content="#10b981" />
       </head>

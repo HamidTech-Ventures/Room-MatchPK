@@ -102,7 +102,7 @@ const COLLECTION_SCHEMAS: Record<string, CollectionSchema> = {
           },
           propertySubType: {
             bsonType: 'string',
-            enum: ['hostel', 'apartment', 'house', 'office', 'studio', '1-bedroom', '2-bedroom', '3-bedroom']
+            enum: ['boys', 'girls', 'co-living', 'family', 'bachelor', 'couple', 'coworking', 'private', 'shared', 'studio', '1-bedroom', '2-bedroom', '3-bedroom']
           },
           address: {
             bsonType: 'object',

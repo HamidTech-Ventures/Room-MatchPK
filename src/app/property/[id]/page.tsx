@@ -509,8 +509,8 @@ Thank you!`
                     <Share2 className="w-4 h-4 mr-2" />
                     Share
                   </Button>
-                  <Button variant="ghost" size="sm" className="text-slate-600 hover:bg-slate-100">
-                    <Heart className="w-4 h-4 mr-2" />
+                  <Button variant="ghost" size="sm" className="text-slate-600 hover:bg-transparent">
+                    <Heart className="w-4 h-4 mr-2 hover:text-red-500 transition-colors" />
                     Save
                   </Button>
                 </div>

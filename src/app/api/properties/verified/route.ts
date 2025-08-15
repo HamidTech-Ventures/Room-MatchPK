@@ -24,6 +24,9 @@ export async function GET(request: NextRequest) {
     // Debug: Log all received filter parameters
     console.log('=== FILTER DEBUG ===')
     console.log('Received filters:', {
+      page,
+      limit,
+      skip,
       search,
       location,
       city,
@@ -93,7 +96,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (propertyType) {
-      filter.propertyType = propertyType
+      // Add both subType and propertyType to the filter
+      filter.$or = [
+        { propertyType: propertyType.toLowerCase() },
+        { subType: propertyType.toLowerCase() }
+      ]
     }
 
     if (genderPreference) {

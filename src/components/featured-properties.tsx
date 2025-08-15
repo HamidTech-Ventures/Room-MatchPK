@@ -233,8 +233,8 @@ export function FeaturedProperties({ hostels }: FeaturedPropertiesProps) {
 
                 {/* Action Buttons */}
                 <div className="absolute bottom-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <Button size="sm" variant="secondary" className="bg-white/90 hover:bg-white shadow-lg">
-                    <Heart className="w-4 h-4" />
+                  <Button size="sm" variant="ghost" className="hover:bg-transparent p-1">
+                    <Heart className="w-4 h-4 text-white hover:text-red-500 transition-colors stroke-2" />
                   </Button>
                   <Button size="sm" variant="secondary" className="bg-white/90 hover:bg-white shadow-lg">
                     <Share2 className="w-4 h-4" />

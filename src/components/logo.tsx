@@ -43,9 +43,9 @@ export function Logo({
     </div>
   )
 
-  // Try multiple image sources
-  const logoSources = ['/logo.png', '/logo.jpg']
-  const currentSource = logoSources[retryCount] || logoSources[0]
+  // Use SVG logo as main source
+  const logoSources = ['/RoomMatch Pk Logo.svg']
+  const currentSource = logoSources[0]
 
   const handleImageError = () => {
     console.warn(`Logo image failed to load: ${currentSource}`)

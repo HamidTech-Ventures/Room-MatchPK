@@ -461,7 +461,7 @@ function ListPropertyContent() {
     console.log('property.generalTimings:', property.generalTimings)
     setFormData({
       propertyName: property.title || '',
-      propertyType: property.propertyType || '',
+      propertyType: property.propertySubType || '', // Category/subcategory
       genderPreference: property.genderPreference || '',
       totalRooms: property.totalRooms?.toString() || '',
       availableRooms: property.availableRooms?.toString() || '',
@@ -632,10 +632,10 @@ function ListPropertyContent() {
       setSelectedCategory('hostel')
       setCurrentFormType('hostel')
       setShowMessForm(false)
-      // Determine sub-type from property data
-      const subType = property.propertySubType || property.subType || 'hostel'
-      setPropertySubType(subType)
-      console.log('Set form to hostel type, subType:', subType)
+      // Determine main property type from property data
+      const mainType = property.propertyType || 'hostel'
+      setPropertySubType(mainType)
+      console.log('Set form to hostel type, mainType:', mainType)
     }
     setShowCategoryDialog(false)
   }
@@ -717,8 +717,8 @@ function ListPropertyContent() {
       const propertyData = {
         title: formData.propertyName,
         description: formData.description,
-        propertyType: formData.propertyType,
-        propertySubType: propertySubType, // Add sub-type to submission
+        propertyType: propertySubType, // Main property type (hostel, apartment, house, office)
+        propertySubType: formData.propertyType, // Category/subcategory (studio, boys, etc.)
         genderPreference: formData.genderPreference,
         address: {
           street: formData.address,

@@ -33,7 +33,7 @@ export interface Property {
   description?: string
   ownerId: string | ObjectId
   propertyType: 'hostel' | 'apartment' | 'office' | 'pg' | 'flat' | 'house' | 'hostel-mess'
-  propertySubType?: 'hostel' | 'apartment' | 'house' | 'office' | 'studio' | '1-bedroom' | '2-bedroom' | '3-bedroom'
+  propertySubType?: 'boys' | 'girls' | 'co-living' | 'family' | 'bachelor' | 'couple' | 'coworking' | 'private' | 'shared' | 'studio' | '1-bedroom' | '2-bedroom' | '3-bedroom'
   genderPreference?: 'boys' | 'girls' | 'mixed'
   address: {
     street: string

@@ -33,7 +33,7 @@ export const PROPERTY_TYPES: PropertyTypeConfig[] = [
   {
     id: "hostel",
     label: "Hostel",
-    icon: Building,
+    icon: "/Hostel.png",
     description: "Student hostels and dormitories",
     color: "text-emerald-700",
     bgColor: "bg-gradient-to-r from-emerald-100 to-emerald-200",
@@ -42,7 +42,7 @@ export const PROPERTY_TYPES: PropertyTypeConfig[] = [
   {
     id: "apartment",
     label: "Apartment",
-    icon: Building2,
+    icon: "/apartment.png",
     description: "Furnished apartments for students",
     color: "text-blue-700",
     bgColor: "bg-gradient-to-r from-blue-100 to-blue-200",
@@ -51,7 +51,7 @@ export const PROPERTY_TYPES: PropertyTypeConfig[] = [
   {
     id: "house",
     label: "House",
-    icon: House,
+    icon: "/house.png",
     description: "Independent houses and villas",
     color: "text-purple-700",
     bgColor: "bg-gradient-to-r from-purple-100 to-purple-200",
@@ -60,7 +60,7 @@ export const PROPERTY_TYPES: PropertyTypeConfig[] = [
   {
     id: "office",
     label: "Office",
-    icon: Briefcase,
+    icon: "/office.jpg",
     description: "Office spaces and co-working areas",
     color: "text-orange-700",
     bgColor: "bg-gradient-to-r from-orange-100 to-orange-200",
@@ -69,7 +69,7 @@ export const PROPERTY_TYPES: PropertyTypeConfig[] = [
   {
     id: "hostel-mess",
     label: "Mess",
-    icon: Utensils,
+    icon: "/mess.png",
     description: "Hostel with mess facilities",
     color: "text-red-700",
     bgColor: "bg-gradient-to-r from-red-100 to-red-200",
