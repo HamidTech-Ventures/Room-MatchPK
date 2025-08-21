@@ -14,6 +14,7 @@ async function profileHandler(request: NextRequest, context: { user: any }) {
         success: false, 
         error: 'User not found'
       }, { status: 404 })
+      
     }
 
     // Return user profile data
