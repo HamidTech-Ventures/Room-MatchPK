@@ -11,7 +11,7 @@ async function profileHandler(request: NextRequest, context: { user: any }) {
     
     if (!currentUser) {
       return NextResponse.json({
-        success: false,
+        success: false, 
         error: 'User not found'
       }, { status: 404 })
     }
