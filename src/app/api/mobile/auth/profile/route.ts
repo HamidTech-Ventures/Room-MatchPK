@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { withMobileAuth } from '../middleware'
+import { withMobileAuth } from '../../middleware'
 import { findUserByEmail } from '@/lib/auth'
 
 async function profileHandler(request: NextRequest, context: { user: any }) {
