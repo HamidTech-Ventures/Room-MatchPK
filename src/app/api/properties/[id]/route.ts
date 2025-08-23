@@ -29,12 +29,25 @@ export async function GET(request: NextRequest) {
         { status: 404 }
       )
     }
+
+    // Fetch owner details from users collection
+    let owner = null;
+    if (property.ownerId) {
+      const usersCollection = db.collection('users');
+      owner = await usersCollection.findOne({ _id: new ObjectId(property.ownerId) }, { projection: { name: 1, email: 1, phone: 1, avatar: 1 } });
+      if (owner) {
+        // Remove _id field to avoid confusion with ownerId
+  delete (owner as any)._id;
+      }
+    }
+
     return NextResponse.json({
       success: true,
       property: {
         ...property,
         _id: property._id?.toString(),
-        ownerId: property.ownerId?.toString()
+        ownerId: property.ownerId?.toString(),
+        owner: owner || null
       }
     })
   } catch (error) {
