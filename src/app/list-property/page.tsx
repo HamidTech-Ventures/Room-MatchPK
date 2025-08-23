@@ -728,11 +728,13 @@ function ListPropertyContent() {
           country: 'Pakistan'
         },
         pricing: {
-          pricePerBed: formData.propertyType === 'hostel-mess'
-            ? parseInt(formData.monthlyCharges)
-            : parseInt(formData.pricePerBed),
+          // Mess form uses pricePerBed as the controlled field for monthly charges.
+          pricePerBed: formData.pricePerBed ? parseInt(formData.pricePerBed) : undefined,
           securityDeposit: formData.securityDeposit ? parseInt(formData.securityDeposit) : 0
         },
+    // Include monthlyRent at top-level for office/house/apartment submissions so server can
+    // use it as a fallback when pricing.pricePerBed isn't provided by the form
+    ...(formData.monthlyRent ? { monthlyRent: parseInt(formData.monthlyRent) } : {}),
         totalRooms: parseInt(formData.totalRooms),
         availableRooms: parseInt(formData.availableRooms),
         amenities: formData.amenities,
@@ -753,7 +755,8 @@ function ListPropertyContent() {
         ...(formData.propertyType === 'hostel-mess' ? {
           messName: formData.messName || formData.propertyName,
           messType: formData.messType,
-          monthlyCharges: formData.monthlyCharges,
+          // Only send monthlyCharges if user provided a value (avoid empty string -> 0)
+          ...(formData.monthlyCharges && formData.monthlyCharges.trim() !== '' ? { monthlyCharges: parseInt(formData.monthlyCharges) } : {}),
           deliveryAvailable: formData.deliveryAvailable,
           deliveryCharges: formData.deliveryCharges,
           coverageArea: formData.coverageArea,
