@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb'
 import jwt from 'jsonwebtoken'
 
 // Environment variable for JWT secret
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_here'
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret'
 
 // Middleware to verify Bearer token
 async function verifyToken(req: NextRequest) {

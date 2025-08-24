@@ -5,7 +5,7 @@ import { ObjectId } from 'mongodb';
 import { verify } from 'jsonwebtoken'; // Import JWT verification
 
 // Secret key for JWT (store in environment variables in production)
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
 // Middleware to verify JWT token
 async function verifyToken(request: NextRequest) {

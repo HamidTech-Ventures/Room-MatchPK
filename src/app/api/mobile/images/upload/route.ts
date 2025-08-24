@@ -3,7 +3,7 @@ import { uploadMultipleToCloudinary } from '@/lib/cloudinary';
 import { getDatabase } from '@/lib/mongodb';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret'
 
 export async function POST(request: NextRequest) {
   try {
