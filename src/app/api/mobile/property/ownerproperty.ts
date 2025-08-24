@@ -251,23 +251,13 @@ export async function DELETE(request: NextRequest) {
     const db = await getDatabase()
     const collection = db.collection<Property>('properties')
 
-    // Verify ownership and soft delete
-    const result = await collection.updateOne(
-      { 
-        _id: new ObjectId(propertyId),
-        ownerId: new ObjectId(user.id)
-      },
-      { 
-        $set: { 
-          status: 'rejected',
-          isActive: false,
-          isVerified: false,
-          updatedAt: new Date()
-        } 
-      }
-    )
+    // ❌ Soft delete → ✅ Hard delete (remove from DB)
+    const result = await collection.deleteOne({
+      _id: new ObjectId(propertyId),
+      ownerId: new ObjectId(user.id)  // only allow owner to delete their own property
+    })
 
-    if (result.modifiedCount === 0) {
+    if (result.deletedCount === 0) {
       return NextResponse.json(
         { success: false, error: 'Property not found or access denied' },
         { status: 404 }
@@ -276,7 +266,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Property deleted successfully'
+      message: 'Property deleted permanently'
     })
 
   } catch (error) {
