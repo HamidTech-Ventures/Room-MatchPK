@@ -122,8 +122,8 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const body = await request.json()
-    const { propertyId, ...updateData } = body
+  const body = await request.json()
+  const { propertyId, ...incoming } = body
 
     if (!propertyId) {
       return NextResponse.json(
@@ -148,19 +148,50 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Update property
+    // Build merged update similar to public PUT to avoid wiping nested pricing
+    const tryParseNumber = (v: any) => {
+      if (v === undefined || v === null) return undefined
+      if (typeof v === 'string' && v.trim() === '') return undefined
+      const n = Number(v)
+      return Number.isFinite(n) ? n : undefined
+    }
+
+    const updateFields: any = {
+      updatedAt: new Date(),
+      status: 'pending',
+      isVerified: false,
+      isActive: false
+    }
+
+    const topLevelFields = ['title','description','propertyType','propertySubType','genderPreference','address','amenities','images','roomDetails','rules','contactInfo','tags','nearbyUniversity','messName','messType','monthlyCharges','monthlyRent','cnicPicFront','cnicPicBack','ownerPic','foodService','foodTimings','foodOptions','foodPricing','foodHygiene','foodStaff','foodCapacity','foodMenuRotation','foodSpecialRequirements']
+    for (const f of topLevelFields) {
+      if (Object.prototype.hasOwnProperty.call(incoming, f)) updateFields[f] = (incoming as any)[f]
+    }
+
+    const totalRoomsParsed = tryParseNumber(incoming.totalRooms)
+    const availableRoomsParsed = tryParseNumber(incoming.availableRooms)
+    if (totalRoomsParsed !== undefined) updateFields.totalRooms = totalRoomsParsed
+    if (availableRoomsParsed !== undefined) updateFields.availableRooms = availableRoomsParsed
+
+    const existingPricing = (existingProperty.pricing as any) || {}
+    const incomingPricing = incoming.pricing || {}
+    const mergedPricing: any = { ...existingPricing }
+    const pricingNumberFields = ['pricePerBed','securityDeposit','maintenanceCharges']
+    for (const k of Object.keys(incomingPricing)) {
+      if (pricingNumberFields.includes(k)) {
+        const parsed = tryParseNumber((incomingPricing as any)[k])
+        if (parsed !== undefined) mergedPricing[k] = parsed
+      } else {
+        mergedPricing[k] = (incomingPricing as any)[k]
+      }
+    }
+    const topPrice = tryParseNumber(incoming.monthlyRent ?? incoming.price ?? incoming.rent ?? incoming.monthlyCharges)
+    if (topPrice !== undefined && mergedPricing.pricePerBed === undefined) mergedPricing.pricePerBed = topPrice
+    if (Object.keys(mergedPricing).length > 0) updateFields.pricing = mergedPricing
+
     const result = await collection.updateOne(
       { _id: new ObjectId(propertyId) },
-      { 
-        $set: { 
-          ...updateData, 
-          updatedAt: new Date(),
-          // Reset verification and status when property is updated
-          status: 'pending',
-          isVerified: false,
-          isActive: false
-        } 
-      }
+      { $set: updateFields }
     )
 
     if (result.modifiedCount === 0) {

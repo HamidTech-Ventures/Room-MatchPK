@@ -833,7 +833,7 @@ function FindRoomsContent() {
                           onClick={() => {
                             const container = document.getElementById(`scroll-${city}`);
                             if (container) {
-                              container.scrollBy({ left: -200, behavior: 'smooth' });
+                              container.scrollBy({ left: -160, behavior: 'smooth' });
                             }
                           }}
                           aria-label={`Scroll left for ${city} properties`}
@@ -849,7 +849,7 @@ function FindRoomsContent() {
                           onClick={() => {
                             const container = document.getElementById(`scroll-${city}`);
                             if (container) {
-                              container.scrollBy({ left: 200, behavior: 'smooth' });
+                              container.scrollBy({ left: 160, behavior: 'smooth' });
                             }
                           }}
                           aria-label={`Scroll right for ${city} properties`}
@@ -895,12 +895,12 @@ function FindRoomsContent() {
                   return (
                     <div
                       key={property._id}
-                      className="transition-all duration-300 flex-shrink-0 w-60 cursor-pointer hover:z-10"
+                      className="transition-all duration-300 flex-shrink-0 w-48 cursor-pointer hover:z-10"
                       style={{}}
                       onClick={() => router.push(`/property/${property._id}`)}
                     >
                         {/* Image - Full height */}
-                        <div className="relative w-full h-40 overflow-hidden bg-slate-100 rounded-xl">
+                        <div className="relative w-full h-32 overflow-hidden bg-slate-100 rounded-xl">
                           {/* Guest Favorite Badge */}
                           <div className="absolute top-2 left-2 z-10">
                             <div className="bg-white/95 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium text-slate-700 shadow-sm">

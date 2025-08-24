@@ -29,12 +29,25 @@ export async function GET(request: NextRequest) {
         { status: 404 }
       )
     }
+
+    // Fetch owner details from users collection
+    let owner = null;
+    if (property.ownerId) {
+      const usersCollection = db.collection('users');
+      owner = await usersCollection.findOne({ _id: new ObjectId(property.ownerId) }, { projection: { name: 1, email: 1, phone: 1, avatar: 1 } });
+      if (owner) {
+        // Remove _id field to avoid confusion with ownerId
+  delete (owner as any)._id;
+      }
+    }
+
     return NextResponse.json({
       success: true,
       property: {
         ...property,
         _id: property._id?.toString(),
-        ownerId: property.ownerId?.toString()
+        ownerId: property.ownerId?.toString(),
+        owner: owner || null
       }
     })
   } catch (error) {
@@ -64,20 +77,25 @@ export async function PUT(request: NextRequest) {
       )
     }
     const body = await request.json()
-    
-    // Validate room numbers logic
+
+    // Parse helper for numbers that accepts 0
+    const tryParseNumber = (v: any) => {
+      if (v === undefined || v === null) return undefined
+      if (typeof v === 'string' && v.trim() === '') return undefined
+      const n = Number(v)
+      return Number.isFinite(n) ? n : undefined
+    }
+    // Validate room numbers logic if both provided
     if (body.totalRooms !== undefined && body.availableRooms !== undefined) {
-      const totalRooms = parseInt(String(body.totalRooms))
-      const availableRooms = parseInt(String(body.availableRooms))
-      
-      if (!isNaN(totalRooms) && !isNaN(availableRooms) && availableRooms > totalRooms) {
+      const totalRooms = tryParseNumber(body.totalRooms)
+      const availableRooms = tryParseNumber(body.availableRooms)
+      if (totalRooms !== undefined && availableRooms !== undefined && availableRooms > totalRooms) {
         return NextResponse.json(
           { success: false, error: 'Available rooms cannot be greater than total rooms' },
           { status: 400 }
         )
       }
     }
-    
     const db = await getDatabase()
     const collection = db.collection<Property>('properties')
     // Verify ownership
@@ -88,9 +106,48 @@ export async function PUT(request: NextRequest) {
         { status: 404 }
       )
     }
+
+    // Build a merged update object to avoid overwriting nested fields like pricing
+    const updateFields: any = {
+      updatedAt: new Date(),
+      status: 'pending',
+      isVerified: false,
+      isActive: false,
+    }
+    // Copy simple top-level fields if provided
+    const topLevelFields = ['title','description','propertyType','propertySubType','genderPreference','address','amenities','images','roomDetails','rules','contactInfo','tags','nearbyUniversity','messName','messType','monthlyCharges','monthlyRent','cnicPicFront','cnicPicBack','ownerPic','foodService','foodTimings','foodOptions','foodPricing','foodHygiene','foodStaff','foodCapacity','foodMenuRotation','foodSpecialRequirements']
+    for (const f of topLevelFields) {
+      if (Object.prototype.hasOwnProperty.call(body, f)) updateFields[f] = body[f]
+    }
+    // Numeric fields - parse safely
+    const totalRoomsParsed = tryParseNumber(body.totalRooms)
+    const availableRoomsParsed = tryParseNumber(body.availableRooms)
+    if (totalRoomsParsed !== undefined) updateFields.totalRooms = totalRoomsParsed
+    if (availableRoomsParsed !== undefined) updateFields.availableRooms = availableRoomsParsed
+    
+    // Merge pricing: preserve existing pricing and overlay any provided values
+    const existingPricing = (property.pricing as any) || {}
+    const incomingPricing = body.pricing || {}
+    const mergedPricing: any = { ...existingPricing }
+    const pricingNumberFields = ['pricePerBed','securityDeposit','maintenanceCharges']
+    for (const k of Object.keys(incomingPricing)) {
+      if (pricingNumberFields.includes(k)) {
+        const parsed = tryParseNumber(incomingPricing[k])
+        if (parsed !== undefined) mergedPricing[k] = parsed
+      } else {
+        // copy non-numeric pricing fields as-is
+        mergedPricing[k] = incomingPricing[k]
+      }
+    }
+    // Also accept top-level monthly/rent fields and map into pricing if pricePerBed not explicitly provided
+    const topPrice = tryParseNumber(body.monthlyRent ?? body.price ?? body.rent ?? body.monthlyCharges)
+    if (topPrice !== undefined && mergedPricing.pricePerBed === undefined) mergedPricing.pricePerBed = topPrice
+    // If mergedPricing has any keys, set it
+    if (Object.keys(mergedPricing).length > 0) updateFields.pricing = mergedPricing
+    
     const result = await collection.updateOne(
       { _id: new ObjectId(id) },
-      { $set: { ...body, updatedAt: new Date(), status: 'pending', isVerified: false, isActive: false } }
+      { $set: updateFields }
     )
     if (result.modifiedCount === 0) {
       return NextResponse.json(

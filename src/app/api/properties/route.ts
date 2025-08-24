@@ -244,6 +244,46 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Determine the primary price value from multiple possible incoming fields.
+    // Frontend multi-step forms sometimes send monthlyRent, price, monthlyCharges, or pricing.pricePerBed.
+    const tryParseNumber = (v: any) => {
+      // Treat undefined/null/empty-string/whitespace as missing value (not zero)
+      if (v === undefined || v === null) return undefined
+      if (typeof v === 'string' && v.trim() === '') return undefined
+      const n = Number(v)
+      return Number.isFinite(n) ? n : undefined
+    }
+
+    const candidates = [
+      // Prefer explicit pricing object values first
+      body?.pricing?.pricePerBed,
+      body?.pricing?.monthlyPrice,
+      body?.pricing?.price,
+      body?.pricing?.rent,
+      // Then top-level fields used by different forms
+      body?.monthlyCharges,
+      body?.monthlyRent,
+      body?.price,
+      body?.rent,
+    ]
+
+    let resolvedPrice: number | undefined
+    for (const c of candidates) {
+      const p = tryParseNumber(c)
+      if (p !== undefined) { resolvedPrice = p; break }
+    }
+
+    // Determine final price and ensure one is provided
+    const monthlyRentCandidate = tryParseNumber(body.monthlyRent ?? body.price ?? body.rent)
+    const monthlyChargesCandidate = tryParseNumber(body.monthlyCharges ?? body.pricing?.monthlyPrice ?? body.pricing?.price)
+    const finalPrice = resolvedPrice ?? monthlyRentCandidate ?? monthlyChargesCandidate
+    if (finalPrice === undefined) {
+      return NextResponse.json(
+        { success: false, error: 'Pricing not provided. Please include pricePerBed or monthlyRent/monthlyCharges.' },
+        { status: 400 }
+      )
+    }
+
     // Build property data object - only include fields that have valid values
     const propertyData: CreateDocument<Property> = {
       title: body.title,
@@ -253,7 +293,7 @@ export async function POST(request: NextRequest) {
       genderPreference: body.genderPreference,
       address: body.address,
       pricing: {
-        pricePerBed: Number(body.pricing.pricePerBed)
+        pricePerBed: finalPrice
       },
       amenities: body.amenities || [],
       images: body.images || [],
@@ -271,17 +311,34 @@ export async function POST(request: NextRequest) {
       ownerPic: body.ownerPic || ''
     }
 
+    // Preserve top-level monthly/rent fields for house/office/apartment/etc. and keep pricing in sync
+    if (monthlyRentCandidate !== undefined) {
+      ;(propertyData as any).monthlyRent = monthlyRentCandidate
+      if (propertyData.pricing && propertyData.pricing.pricePerBed === undefined) {
+        propertyData.pricing.pricePerBed = monthlyRentCandidate
+      }
+    }
+    if (monthlyChargesCandidate !== undefined) {
+      ;(propertyData as any).monthlyCharges = monthlyChargesCandidate
+      if (propertyData.pricing && propertyData.pricing.pricePerBed === undefined) {
+        propertyData.pricing.pricePerBed = monthlyChargesCandidate
+      }
+    }
+
     // Add optional pricing fields only if they have values
-    if (body.pricing.securityDeposit && !isNaN(Number(body.pricing.securityDeposit))) {
-      propertyData.pricing.securityDeposit = Number(body.pricing.securityDeposit)
+    // Accept 0 values as valid (owner may explicitly set 0)
+    if (body?.pricing?.securityDeposit !== undefined && body.pricing.securityDeposit !== null) {
+      const sd = tryParseNumber(body.pricing.securityDeposit)
+      if (sd !== undefined) propertyData.pricing.securityDeposit = sd
     }
-    if (body.pricing.maintenanceCharges && !isNaN(Number(body.pricing.maintenanceCharges))) {
-      propertyData.pricing.maintenanceCharges = Number(body.pricing.maintenanceCharges)
+    if (body?.pricing?.maintenanceCharges !== undefined && body.pricing.maintenanceCharges !== null) {
+      const mc = tryParseNumber(body.pricing.maintenanceCharges)
+      if (mc !== undefined) propertyData.pricing.maintenanceCharges = mc
     }
-    if (body.pricing.electricityCharges) {
+    if (body?.pricing?.electricityCharges !== undefined && body.pricing.electricityCharges !== null) {
       propertyData.pricing.electricityCharges = body.pricing.electricityCharges
     }
-    if (body.pricing.waterCharges) {
+    if (body?.pricing?.waterCharges !== undefined && body.pricing.waterCharges !== null) {
       propertyData.pricing.waterCharges = body.pricing.waterCharges
     }
 

@@ -7,6 +7,45 @@ import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
+// Simple Google Map embed component
+function PropertyMap({ address }: { address: any }) {
+  // Renders a map for the given address.
+  // Primary method: Google Maps Embed API (requires API key).
+  // Fallback: public maps.google.com search iframe which doesn't require an API key.
+  if (!address) return null;
+  const searchQuery = `${address.street || ''} ${address.area || ''} ${address.city || ''} Pakistan`.trim();
+  const encodedQuery = encodeURIComponent(searchQuery);
+
+  // Replace this with your Google Maps Embed API key if you have one.
+  const GMAP_EMBED_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY || 'YOUR_GOOGLE_MAPS_EMBED_API_KEY';
+
+  // URL that uses the Maps Embed API (may return 403 if key is invalid or restricted)
+  const embedApiUrl = `https://www.google.com/maps/embed/v1/place?key=${GMAP_EMBED_KEY}&q=${encodedQuery}`;
+
+  // Fallback URL uses a public maps.google.com search URL embedded in an iframe.
+  // This often works without an API key but offers less customization.
+  const fallbackUrl = `https://www.google.com/maps?q=${encodedQuery}&output=embed`;
+
+  // If developer hasn't provided a real API key, use the fallback to avoid the 403 error.
+  const useFallback = !GMAP_EMBED_KEY || GMAP_EMBED_KEY === 'YOUR_GOOGLE_MAPS_EMBED_API_KEY';
+
+  const src = useFallback ? fallbackUrl : embedApiUrl;
+
+  return (
+    <div className="w-full rounded-xl overflow-hidden border border-slate-200" style={{ height: '400px' }}>
+      <iframe
+        title="Property Location Map"
+        src={src}
+        width="100%"
+        height="100%"
+        style={{ border: 0 }}
+        allowFullScreen
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
+      />
+    </div>
+  );
+}
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -395,21 +434,22 @@ Thank you!`
 
         {/* New Airbnb-style Image Gallery */}
         <div className="mb-8">
-          <div className="grid grid-cols-4 gap-2 h-96 rounded-xl overflow-hidden">
+          <div className="grid grid-cols-3 gap-2 h-96 rounded-xl overflow-hidden">
             {(() => {
-              const images = getImageUrls()
-              const mainImage = images[0] || '/placeholder.svg'
-              const sideImages = images.slice(1, 5) // Show up to 4 additional images
+              const images = getImageUrls();
+              const mainImage = images[0] || '/placeholder.svg';
+              const sideImages = images.slice(1, 3); // Up to 2 additional images
 
               return (
                 <>
-                  {/* Main large image - takes 2 columns */}
-                  <div className="col-span-2 relative group cursor-pointer" onClick={() => setShowAllImages(true)}>
+                  {/* Main large image - left side, spans 2 columns (balanced width) */}
+                  <div className="col-span-2 relative group cursor-pointer h-96" onClick={() => setShowAllImages(true)}>
                     <Image
                       src={mainImage}
                       alt={propertyData.title || 'Property image'}
                       fill
                       className="object-cover group-hover:brightness-90 transition-all duration-300"
+                      style={{ objectFit: 'cover' }}
                     />
                     {/* Badges on main image */}
                     <div className="absolute top-4 left-4 flex flex-col space-y-2">
@@ -421,39 +461,40 @@ Thank you!`
                     </div>
                   </div>
 
-                  {/* Side images grid - takes 2 columns */}
-                  <div className="col-span-2 grid grid-cols-2 gap-2">
+                  {/* Two stacked smaller images on the right */}
+                  <div className="col-span-1 flex flex-col gap-2 h-96">
                     {sideImages.map((imageUrl: string, index: number) => (
                       <div
                         key={index}
-                        className="relative group cursor-pointer"
+                        className="relative group cursor-pointer flex-1 min-h-0"
                         onClick={() => setShowAllImages(true)}
+                        style={{ height: 'calc(50% - 4px)' }}
                       >
                         <Image
-                          src={imageUrl || "/placeholder.svg"}
+                          src={imageUrl || '/placeholder.svg'}
                           alt={propertyData.title ? `${propertyData.title} image ${index + 2}` : `Property image ${index + 2}`}
                           fill
-                          className="object-cover group-hover:brightness-90 transition-all duration-300"
+                          className="object-cover group-hover:brightness-90 transition-all duration-300 rounded-lg"
+                          style={{ objectFit: 'cover' }}
                         />
                         {/* Show "View all photos" on last image if there are more */}
-                        {index === 3 && images.length > 5 && (
-                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        {index === 1 && images.length > 3 && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
                             <div className="text-white text-center">
                               <Camera className="w-6 h-6 mx-auto mb-1" />
-                              <span className="text-sm font-medium">+{images.length - 5} more</span>
+                              <span className="text-sm font-medium">+{images.length - 3} more</span>
                             </div>
                           </div>
                         )}
                       </div>
                     ))}
-
-                    {/* Fill empty slots if less than 4 side images */}
-                    {Array.from({ length: Math.max(0, 4 - sideImages.length) }).map((_, index) => (
-                      <div key={`empty-${index}`} className="bg-slate-100 rounded-lg"></div>
+                    {/* Fill empty slots if less than 2 side images */}
+                    {Array.from({ length: Math.max(0, 2 - sideImages.length) }).map((_, index) => (
+                      <div key={`empty-${index}`} className="bg-slate-100 rounded-lg flex-1 min-h-0"></div>
                     ))}
                   </div>
                 </>
-              )
+              );
             })()}
           </div>
 
@@ -615,19 +656,6 @@ Thank you!`
                   </p>
                 </div>
 
-                {/* Additional room info if available */}
-                {propertyData.propertyType !== "hostel-mess" && propertyData.totalRooms > 1 && (
-                  <div className="border border-slate-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-                    <div className="aspect-square bg-slate-100 rounded-lg mb-4 flex items-center justify-center">
-                      <Users className="w-12 h-12 text-slate-400" />
-                    </div>
-                    <h3 className="font-semibold text-slate-900 mb-2">Shared Rooms</h3>
-                    <p className="text-sm text-slate-600">
-                      Multiple occupancy rooms available
-                    </p>
-                  </div>
-                )}
-
                 {/* Common area if applicable */}
                 {propertyData.amenities?.some((amenity: string) =>
                   amenity.toLowerCase().includes('common') ||
@@ -648,26 +676,41 @@ Thank you!`
             </div>
 
             {/* Host Information Section */}
-            {propertyData.contactInfo && (
+            {propertyData.owner && (
               <div className="mb-8 pb-8 border-b border-slate-200">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-4">
                     <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center">
-                      <User className="w-7 h-7 text-emerald-600" />
+                      {propertyData.owner.avatar ? (
+                        <Image src={propertyData.owner.avatar} alt={propertyData.owner.name || 'Owner'} width={56} height={56} className="rounded-full object-cover" />
+                      ) : (
+                        <User className="w-7 h-7 text-emerald-600" />
+                      )}
                     </div>
                     <div>
-                      <h2 className="text-xl font-semibold text-slate-900">Hosted by Property Owner</h2>
+                      <h2 className="text-xl font-semibold text-slate-900">Hosted by {propertyData.owner.name || 'Property Owner'}</h2>
                       <p className="text-slate-600">
                         {propertyData.isVerified ? 'Verified host' : 'Host'} •
                         {propertyData.totalReviews > 0 ? ` ${propertyData.totalReviews} reviews` : ' New host'}
                       </p>
+                      {/* Owner details */}
+                      {propertyData.owner.email && (
+                        <div className="mt-2 text-slate-700">
+                          <span className="font-semibold">Email:</span> {propertyData.owner.email}
+                        </div>
+                      )}
+                      {propertyData.owner.phone && (
+                        <div className="mt-1 text-slate-700">
+                          <span className="font-semibold">Phone:</span> {propertyData.owner.phone}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    {propertyData.contactInfo.phone && (
+                    {propertyData.owner.phone && (
                       <Button
                         variant="outline"
-                        onClick={() => openWhatsApp(propertyData.contactInfo.phone)}
+                        onClick={() => openWhatsApp(propertyData.owner.phone)}
                         className="border-slate-300 text-slate-700 hover:bg-slate-50"
                       >
                         <MessageCircle className="w-4 h-4 mr-2" />
@@ -1135,8 +1178,13 @@ Thank you!`
                   )}
                 </div>
               </CardContent>
-            </Card>
-          </div>
+              </Card>
+
+              {/* Map below reviews - full width of the main content column */}
+              <div className="mb-10">
+                <PropertyMap address={propertyData.address} />
+              </div>
+            </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
@@ -1186,17 +1234,8 @@ Thank you!`
                       <span className="text-slate-500 text-sm">Contact info not available</span>
                     </div>
                   )}
-
-                  {/* Secondary Actions */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={openInMaps}
-                      className="h-11 border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
-                    >
-                      <Navigation className="w-4 h-4 mr-2" />
-                      Map
-                    </Button>
+                  {/* Secondary Actions: Only Email now */}
+                  <div className="grid grid-cols-1 gap-2">
                     {propertyData.contactInfo?.email && (
                       <Button
                         variant="outline"
@@ -1219,6 +1258,8 @@ Thank you!`
                 </div>
               </CardContent>
             </Card>
+
+            
 
 
 
