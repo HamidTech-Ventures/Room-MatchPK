@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -36,8 +38,8 @@ import {
   MessageCircle,
   Home,
   Building,
+  X,
 } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { AuthLoading } from "@/components/auth-loading"
 import { UnifiedChat } from "@/components/unified-chat"
 import { PROPERTY_TYPES } from "@/lib/property-types"
@@ -46,22 +48,29 @@ import { Loader2 } from "lucide-react"
 function FindRoomsContent() {
   const { user, logout } = useAuth()
   const { isChatOpen, toggleChat } = useChat()
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [showProfile, setShowProfile] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1)
-  const router = useRouter()
+  
+  // Wishlist functionality
+  const [wishlist, setWishlist] = useState<string[]>([])
+  const [showWishlist, setShowWishlist] = useState(false)
   
   // Initial filter values - no default price range to show all properties
-  const initialFilters = {
-    propertyType: "",
-    genderPreference: "",
-    priceRange: [0, 999999], // Very wide range to include all properties by default
-    amenities: [] as string[],
-    sortBy: "relevance",
-    searchQuery: "", // For hostel name, city, area search
+  const getInitialFilters = () => {
+    return {
+      propertyType: searchParams.get('propertyType') || "",
+      genderPreference: "",
+      priceRange: [0, 999999], // Very wide range to include all properties by default
+      amenities: [] as string[],
+      sortBy: "relevance",
+      searchQuery: searchParams.get('search') || "", // For hostel name, city, area search
+    }
   }
   
   // Use local storage for filter persistence
@@ -69,7 +78,7 @@ function FindRoomsContent() {
     formData: filters,
     updateFormData: updateFilters,
     resetForm: resetFilters
-  } = useFormLocalStorage('room-search-filters', initialFilters, {
+  } = useFormLocalStorage('room-search-filters', getInitialFilters(), {
     autoSave: true,
     debounceMs: 300 // Quick save for search filters
   })
@@ -98,6 +107,34 @@ function FindRoomsContent() {
     { id: "security", label: "Security", icon: Users },
     { id: "study", label: "Study Room", icon: Users },
   ]
+
+  // Wishlist functionality
+  useEffect(() => {
+    // Load wishlist from localStorage on component mount
+    const savedWishlist = localStorage.getItem('property-wishlist')
+    if (savedWishlist) {
+      setWishlist(JSON.parse(savedWishlist))
+    }
+  }, [])
+
+  const toggleWishlist = (propertyId: string) => {
+    setWishlist(prev => {
+      const newWishlist = prev.includes(propertyId)
+        ? prev.filter(id => id !== propertyId)
+        : [...prev, propertyId]
+      
+      // Save to localStorage
+      localStorage.setItem('property-wishlist', JSON.stringify(newWishlist))
+      return newWishlist
+    })
+  }
+
+  const isInWishlist = (propertyId: string) => wishlist.includes(propertyId)
+
+  // Get wishlist properties
+  const wishlistProperties = properties.filter(property => 
+    wishlist.includes(property._id)
+  )
 
   // Popular cities and areas for search suggestions
   const popularLocations = [
@@ -201,7 +238,7 @@ function FindRoomsContent() {
       }
     }
     fetchProperties(pagination.page)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [pagination.page, filters])
 
   // Fetch property counts when filters change (excluding propertyType and page)
@@ -229,6 +266,48 @@ function FindRoomsContent() {
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [showSuggestions])
+
+  // Enhanced click-outside handler for profile dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      
+      // Don't close if clicking on the profile button or inside the dropdown
+      if (!target.closest('.profile-dropdown-container')) {
+        // Add a small delay to prevent immediate reopening
+        setTimeout(() => {
+          setShowProfile(false)
+        }, 10)
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowProfile(false)
+      }
+    }
+
+    if (showProfile) {
+      // Use capture phase for more reliable event handling
+      document.addEventListener('mousedown', handleClickOutside, true)
+      document.addEventListener('keydown', handleKeyDown)
+      
+      // Add backdrop to capture clicks
+      const backdrop = document.createElement('div')
+      backdrop.className = 'profile-dropdown-backdrop'
+      backdrop.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 40; background: transparent;'
+      document.body.appendChild(backdrop)
+      
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside, true)
+        document.removeEventListener('keydown', handleKeyDown)
+        const existingBackdrop = document.querySelector('.profile-dropdown-backdrop')
+        if (existingBackdrop) {
+          existingBackdrop.remove()
+        }
+      }
+    }
+  }, [showProfile])
 
   // Handler for page change
   const handlePageChange = (newPage: number) => {
@@ -371,8 +450,8 @@ function FindRoomsContent() {
   };
   return (
     <div className="min-h-screen bg-[#f7f7f7]">
-      {/* Custom Navbar for Find Rooms */}
-      <nav className="bg-[#f7f7f7] border-b-0 shadow-none">
+      {/* Custom Navbar for Find Rooms - Hidden on mobile */}
+      <nav className="bg-[#f7f7f7] border-b-0 shadow-none hidden md:block">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12">
           <div className="flex items-center h-24 gap-6 sm:gap-10">
             {/* Logo only, no text, much larger size for better appearance */}
@@ -409,48 +488,81 @@ function FindRoomsContent() {
             </div>
             {/* Profile icon only, much larger for better appearance */}
             <div className="flex items-center flex-shrink-0">
-              <div className="relative">
+              <div className="relative profile-dropdown-container">
                 <Button
                   variant="ghost"
                   onClick={() => setShowProfile(!showProfile)}
                   className="flex items-center hover:bg-slate-100 px-4 py-4"
                   size="lg"
                 >
-                  <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <User className="w-10 h-10 text-emerald-600" />
-                  </div>
+                  {user ? (
+                    <Avatar className="w-16 h-16">
+                      <AvatarImage src={user.avatar || ''} alt={user.name} />
+                      <AvatarFallback className="bg-emerald-100 text-emerald-600 text-xl font-semibold">
+                        {user.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                  ) : (
+                    <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <User className="w-10 h-10 text-emerald-600" />
+                    </div>
+                  )}
                 </Button>
-                {/* Profile Dropdown remains unchanged */}
+                {/* Profile Dropdown */}
                 {showProfile && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50">
-                    <div className="px-4 py-3 border-b border-slate-200">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
-                          <User className="w-6 h-6 text-emerald-600" />
+                  <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50">
+                    {user ? (
+                      <>
+                        <div className="px-4 py-3 border-b border-slate-200">
+                          <div className="flex items-center space-x-3">
+                            <Avatar className="w-12 h-12">
+                              <AvatarImage src={user.avatar || ''} alt={user.name} />
+                              <AvatarFallback className="bg-emerald-100 text-emerald-600 font-medium">
+                                {user.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                              <div className="font-medium text-slate-800 truncate">{user?.name}</div>
+                              <div className="text-sm text-slate-600 truncate break-all">{user?.email}</div>
+                              <Badge className="bg-emerald-100 text-emerald-700 text-xs mt-1">{user?.role}</Badge>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-medium text-slate-800">{user?.name}</div>
-                          <div className="text-sm text-slate-600">{user?.email}</div>
-                          <Badge className="bg-emerald-100 text-emerald-700 text-xs mt-1">{user?.role}</Badge>
+                        <div className="py-2">
+                          <Link
+                            href="/my-bookings"
+                            className="flex items-center space-x-3 px-4 py-2 text-slate-700 hover:bg-slate-50 transition-colors"
+                          >
+                            <Heart className="w-4 h-4" />
+                            <span>My Bookings</span>
+                          </Link>
+                          <button
+                            onClick={logout}
+                            className="flex items-center space-x-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors w-full text-left"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            <span>Logout</span>
+                          </button>
                         </div>
+                      </>
+                    ) : (
+                      <div className="py-2">
+                        <Link
+                          href="/auth/login"
+                          className="flex items-center space-x-3 px-4 py-2 text-emerald-600 hover:bg-emerald-50 transition-colors"
+                        >
+                          <User className="w-4 h-4" />
+                          <span>Login</span>
+                        </Link>
+                        <Link
+                          href="/signup"
+                          className="flex items-center space-x-3 px-4 py-2 text-emerald-600 hover:bg-emerald-50 transition-colors"
+                        >
+                          <User className="w-4 h-4" />
+                          <span>Sign Up</span>
+                        </Link>
                       </div>
-                    </div>
-                    <div className="py-2">
-                      <Link
-                        href="/my-bookings"
-                        className="flex items-center space-x-3 px-4 py-2 text-slate-700 hover:bg-slate-50 transition-colors"
-                      >
-                        <Heart className="w-4 h-4" />
-                        <span>My Bookings</span>
-                      </Link>
-                      <button
-                        onClick={logout}
-                        className="flex items-center space-x-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors w-full text-left"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span>Logout</span>
-                      </button>
-                    </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -459,10 +571,96 @@ function FindRoomsContent() {
         </div>
       </nav>
 
+      {/* Mobile Search Section - Single Clean Design */}
+      <div className="md:hidden bg-white">
+        {/* Main Search Bar - Reduced Size */}
+        <div className="px-4 py-3">
+          <div className="relative flex items-center gap-2">
+            <div className="flex-1 relative">
+              <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search hostels, cite"
+                value={filters.searchQuery}
+                onChange={(e) => handleFilterChange('searchQuery', e.target.value)}
+                className="w-full pl-8 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-colors"
+              />
+            </div>
+            {/* Wishlist Button */}
+            <button
+              onClick={() => setShowWishlist(!showWishlist)}
+              className={`p-2 rounded-lg transition-colors ${
+                showWishlist 
+                  ? 'bg-red-500 hover:bg-red-600' 
+                  : 'bg-gray-200 hover:bg-gray-300'
+              }`}
+            >
+              <Heart className={`w-4 h-4 ${
+                showWishlist ? 'text-white fill-white' : 'text-gray-600'
+              }`} />
+            </button>
+            {/* Filter Button - Reduced Size */}
+            <button
+              onClick={() => setShowFilters(true)}
+              className="p-2 bg-emerald-500 rounded-lg hover:bg-emerald-600 transition-colors"
+            >
+              <SlidersHorizontal className="w-4 h-4 text-white" />
+            </button>
+          </div>
+          {/* Wishlist count indicator */}
+          {wishlist.length > 0 && (
+            <div className="mt-2 text-xs text-gray-600">
+              {wishlist.length} item{wishlist.length !== 1 ? 's' : ''} in wishlist
+            </div>
+          )}
+        </div>
 
+        {/* Category Cards - Reduced Size */}
+        <div className="px-4 pb-3">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+            {[
+              { id: 'hostel', label: 'Hostels', icon: '/Hostel.png' },
+              { id: 'apartment', label: 'Apartments', icon: '/apartment.png' },
+              { id: 'house', label: 'Homes', icon: '/house.png' },
+              { id: 'office', label: 'Office', icon: '/office.jpg' },
+              { id: 'hostel-mess', label: 'Mess', icon: '/mess.png' }
+            ].map((category) => {
+              const isActive = filters.propertyType === category.id;
+              return (
+                <button
+                  key={category.id}
+                  onClick={() => handleFilterChange('propertyType', isActive ? '' : category.id)}
+                  className={`flex-shrink-0 min-w-[65px] p-2 rounded-lg border-2 transition-all ${
+                    isActive
+                      ? 'border-emerald-500 bg-emerald-50'
+                      : 'border-gray-200 bg-white hover:border-emerald-300'
+                  }`}
+                >
+                  <div className="flex flex-col items-center space-y-1">
+                    <div className="w-6 h-6 rounded-md overflow-hidden pointer-events-none">
+                      <Image
+                        src={category.icon}
+                        alt={category.label}
+                        width={24}
+                        height={24}
+                        className="w-full h-full object-cover pointer-events-none"
+                      />
+                    </div>
+                    <span className={`text-xs font-medium ${
+                      isActive ? 'text-emerald-700' : 'text-gray-700'
+                    }`}>
+                      {category.label}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
 
-      {/* Search Bar Section - Professional layout with Filters button parallel to search bar */}
-      <div className="bg-[#f7f7f7] border-b-0">
+      {/* Desktop Search Bar Section - Hidden on mobile */}
+      <div className="hidden md:block bg-[#f7f7f7] border-b-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="bg-[#f7f7f7] rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-none border-0 flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
@@ -540,7 +738,25 @@ function FindRoomsContent() {
                 >
                   <SlidersHorizontal className="w-5 h-5" />
                 </button>
+                {/* Wishlist Button */}
+                <button
+                  onClick={() => setShowWishlist(!showWishlist)}
+                  className={`flex items-center justify-center h-10 sm:h-12 w-10 sm:w-12 border rounded-full ml-3 transition-colors ${
+                    showWishlist 
+                      ? 'border-red-500 bg-red-500 text-white' 
+                      : 'border-slate-300 text-slate-700 hover:border-red-400 hover:text-red-500'
+                  }`}
+                  aria-label="Wishlist"
+                >
+                  <Heart className={`w-5 h-5 ${showWishlist ? 'fill-white' : ''}`} />
+                </button>
               </div>
+              {/* Wishlist count indicator for desktop */}
+              {wishlist.length > 0 && (
+                <div className="text-sm text-slate-600 mt-2">
+                  {wishlist.length} item{wishlist.length !== 1 ? 's' : ''} in wishlist
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -736,6 +952,110 @@ function FindRoomsContent() {
 
             {/* Properties by City */}
             <div className="space-y-10">
+              {/* Wishlist View */}
+              {showWishlist && (
+                <div className="mb-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center space-x-3">
+                      <Heart className="w-6 h-6 text-red-500 fill-red-500" />
+                      <span>My Wishlist ({wishlist.length})</span>
+                    </h2>
+                    <button
+                      onClick={() => setShowWishlist(false)}
+                      className="text-emerald-600 hover:text-emerald-700 font-medium text-sm flex items-center space-x-1 transition-colors hover:bg-emerald-50 px-3 py-2 rounded-lg"
+                    >
+                      <X className="w-4 h-4" />
+                      <span>Close</span>
+                    </button>
+                  </div>
+                  
+                  {wishlistProperties.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center min-h-[300px] bg-gradient-to-br from-red-50 to-pink-50 rounded-2xl border-2 border-dashed border-red-200 p-8">
+                      <Heart className="w-16 h-16 text-red-300 mb-4" />
+                      <h3 className="text-xl font-bold text-slate-800 mb-2">Your wishlist is empty</h3>
+                      <p className="text-slate-600 text-center max-w-md">
+                        Start adding properties to your wishlist by clicking the heart icon on property cards.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="relative group">
+                      <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 px-1">
+                        {wishlistProperties.map((property: any) => {
+                          const imageUrl = (() => {
+                            if (Array.isArray(property.images) && property.images.length > 0) {
+                              const firstImage = property.images[0]
+                              if (typeof firstImage === 'string' && firstImage.trim() !== '') {
+                                return firstImage
+                              } 
+                              else if (typeof firstImage === 'object' && firstImage !== null) {
+                                if (firstImage.url && typeof firstImage.url === 'string' && firstImage.url.trim() !== '') {
+                                  return firstImage.url
+                                }
+                                else if (firstImage.secure_url && typeof firstImage.secure_url === 'string' && firstImage.secure_url.trim() !== '') {
+                                  return firstImage.secure_url
+                                }
+                              }
+                            }
+                            return '/placeholder.svg'
+                          })()
+                          const name = property.title || "Unnamed Property";
+                          const location = property.address ? `${property.address.area || ''}, ${property.address.city || ''}` : "Unknown Location";
+                          const price = property.pricing?.pricePerBed || 0;
+                          const rating = property.rating || 0;
+                          
+                          return (
+                            <div
+                              key={property._id}
+                              className="transition-all duration-300 flex-shrink-0 w-44 cursor-pointer hover:z-10 pb-2 hover:shadow-lg hover:border hover:border-red-200 rounded-lg"
+                              onClick={() => router.push(`/property/${property._id}`)}
+                            >
+                              <div className="relative w-full h-32 overflow-hidden bg-slate-100 rounded-lg">
+                                <div className="absolute top-1.5 right-1.5 z-10">
+                                  <button
+                                    className="w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition-all"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleWishlist(property._id);
+                                    }}
+                                  >
+                                    <Heart className="w-3.5 h-3.5 text-white fill-white" />
+                                  </button>
+                                </div>
+                                <Image
+                                  src={imageUrl}
+                                  alt={name}
+                                  fill
+                                  className="object-cover md:transition-transform md:duration-300 md:hover:scale-110"
+                                />
+                              </div>
+                              <div className="pt-2 space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <h3 className="font-medium text-sm text-slate-800 hover:text-emerald-600 transition-colors line-clamp-1">
+                                    {name}
+                                  </h3>
+                                  <span className="flex items-center bg-white/95 backdrop-blur-sm rounded-full px-2 py-1 shadow-sm">
+                                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400 mr-1" />
+                                    <span className="text-xs font-medium text-slate-700">{rating}</span>
+                                  </span>
+                                </div>
+                                <div className="text-slate-500">
+                                  <span className="text-xs line-clamp-1">{location}</span>
+                                </div>
+                                <div className="flex items-center pt-1">
+                                  <span className="text-sm font-bold text-slate-800">
+                                    ₨{price.toLocaleString()}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
               {loading ? (
                 <div className="w-full">
                   <div className="min-h-[400px] w-full bg-gradient-to-br from-slate-50 to-blue-50 rounded-2xl border border-slate-200 flex items-center justify-center">
@@ -833,7 +1153,7 @@ function FindRoomsContent() {
                           onClick={() => {
                             const container = document.getElementById(`scroll-${city}`);
                             if (container) {
-                              container.scrollBy({ left: -160, behavior: 'smooth' });
+                              container.scrollBy({ left: -180, behavior: 'smooth' });
                             }
                           }}
                           aria-label={`Scroll left for ${city} properties`}
@@ -849,7 +1169,7 @@ function FindRoomsContent() {
                           onClick={() => {
                             const container = document.getElementById(`scroll-${city}`);
                             if (container) {
-                              container.scrollBy({ left: 160, behavior: 'smooth' });
+                              container.scrollBy({ left: 180, behavior: 'smooth' });
                             }
                           }}
                           aria-label={`Scroll right for ${city} properties`}
@@ -862,7 +1182,7 @@ function FindRoomsContent() {
                         {/* Scroll container */}
                         <div
                           id={`scroll-${city}`}
-                          className="property-scroll-container flex gap-3 overflow-x-auto scrollbar-hide pb-4 px-1"
+                          className="property-scroll-container flex gap-4 overflow-x-auto scrollbar-hide pb-4 px-1"
                         >
                         {cityProperties.map((property: any) => {
                   // Extract image URL properly - handle multiple formats
@@ -895,12 +1215,12 @@ function FindRoomsContent() {
                   return (
                     <div
                       key={property._id}
-                      className="transition-all duration-300 flex-shrink-0 w-48 cursor-pointer hover:z-10"
+                      className="transition-all duration-300 flex-shrink-0 w-48 md:w-56 cursor-pointer hover:z-10 pb-2 hover:shadow-lg hover:border hover:border-emerald-200 rounded-lg"
                       style={{}}
                       onClick={() => router.push(`/property/${property._id}`)}
                     >
-                        {/* Image - Full height */}
-                        <div className="relative w-full h-32 overflow-hidden bg-slate-100 rounded-xl">
+                        {/* Image - Increased Size for Desktop */}
+                        <div className="relative w-full h-36 md:h-48 overflow-hidden bg-slate-100 rounded-lg">
                           {/* Guest Favorite Badge */}
                           <div className="absolute top-2 left-2 z-10">
                             <div className="bg-white/95 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium text-slate-700 shadow-sm">
@@ -908,15 +1228,24 @@ function FindRoomsContent() {
                             </div>
                           </div>
 
-                          {/* Heart Icon */}
+                          {/* Heart Icon - Functional Wishlist */}
                           <div className="absolute top-2 right-2 z-10">
                             <button
-                              className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-transparent transition-colors"
+                              className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                                isInWishlist(property._id)
+                                  ? 'bg-red-500 hover:bg-red-600'
+                                  : 'bg-white/80 hover:bg-white'
+                              }`}
                               onClick={(e) => {
                                 e.stopPropagation(); // Prevent card click when clicking heart
+                                toggleWishlist(property._id);
                               }}
                             >
-                              <Heart className="w-4 h-4 text-white hover:text-red-500 transition-colors stroke-2" />
+                              <Heart className={`w-4 h-4 transition-colors ${
+                                isInWishlist(property._id)
+                                  ? 'text-white fill-white'
+                                  : 'text-gray-600 hover:text-red-500'
+                              }`} />
                             </button>
                           </div>
                           {/* Loading indicator */}
@@ -929,7 +1258,7 @@ function FindRoomsContent() {
                             src={imageUrl}
                             alt={name}
                             fill
-                            className="object-cover transition-transform duration-300 hover:scale-110"
+                            className="object-cover md:transition-transform md:duration-300 md:hover:scale-110"
                             onLoadingComplete={() => {
                               setImageLoadingStates(prev => ({ ...prev, [property._id]: false }))
                             }}
@@ -949,17 +1278,17 @@ function FindRoomsContent() {
                           {imageUrl === '/placeholder.svg' && (
                             <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
                               <div className="text-center text-slate-400">
-                                <Building className="w-12 h-12 mx-auto mb-2" />
-                                <p className="text-sm">No Image</p>
+                                <Building className="w-8 md:w-12 h-8 md:h-12 mx-auto mb-2" />
+                                <p className="text-xs md:text-sm">No Image</p>
                               </div>
                             </div>
                           )}
                         </div>
                         {/* Content Below Image */}
-                        <div className="pt-2 space-y-1">
+                        <div className="pt-2 md:pt-3 space-y-1 md:space-y-2">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center justify-between w-full">
-                              <h3 className="font-medium text-sm text-slate-800 hover:text-emerald-600 transition-colors line-clamp-1">
+                              <h3 className="font-medium text-sm md:text-base text-slate-800 hover:text-emerald-600 transition-colors line-clamp-1">
                                 {name}
                               </h3>
                               <span className="flex items-center bg-white/95 backdrop-blur-sm rounded-full px-2 py-1 shadow-sm mr-2">
@@ -969,12 +1298,12 @@ function FindRoomsContent() {
                             </div>
                           </div>
                           <div className="text-slate-500">
-                            <span className="text-xs line-clamp-1">{location}</span>
+                            <span className="text-xs md:text-sm line-clamp-1">{location}</span>
                           </div>
-                          <div className="flex items-center pt-0.5">
+                          <div className="flex items-center pt-1">
                             <div className="flex items-center space-x-2">
                               <div>
-                                <span className="text-sm font-bold text-slate-800">
+                                <span className="text-sm md:text-base font-bold text-slate-800">
                                   ₨{price.toLocaleString()}
                                 </span>
                               </div>
@@ -1100,9 +1429,5 @@ function FindRoomsContent() {
 }
 
 export default function FindRoomsPage() {
-  return (
-    <ProtectedRoute allowedRoles={["student"]}>
-      <FindRoomsContent />
-    </ProtectedRoute>
-  );
+  return <FindRoomsContent />
 }

@@ -92,7 +92,7 @@ export function HeroSection() {
           <div className="max-w-5xl">
             <div className="mb-4 sm:mb-6">
               <span className="inline-block px-3 sm:px-4 py-1 sm:py-2 bg-emerald-500/20 backdrop-blur-sm rounded-full text-emerald-300 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
-                🏠 Pakistan's #1 Student Housing Platform
+                🏠 Pakistan&apos;s #1 Student Housing Platform
               </span>
             </div>
 

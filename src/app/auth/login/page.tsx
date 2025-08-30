@@ -16,10 +16,12 @@ import { useAuth } from "@/contexts/auth-context"
 import { signIn } from "next-auth/react"
 import { toast } from "sonner"
 import { useFormLocalStorage } from "@/hooks/use-local-storage"
+import { useFormValidation, validationSchemas } from "@/lib/form-validation"
 import { HydrationBoundary } from "@/components/hydration-boundary"
 
 export default function AuthLoginPage() {
   const [showPassword, setShowPassword] = useState(false)
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({})
   
   // Initial form data
   const initialFormData = {
@@ -46,6 +48,21 @@ export default function AuthLoginPage() {
 
   const router = useRouter()
   const searchParams = useSearchParams()
+
+  const {
+    validateAllFields,
+    getFieldError,
+    isFieldValid,
+    getFieldClassName
+  } = useFormValidation(formData, validationSchemas.login, touchedFields)
+
+  const handleFieldChange = (field: keyof typeof formData, value: any) => {
+    updateFormData(field, value)
+  }
+
+  const handleFieldBlur = (field: keyof typeof formData) => {
+    setTouchedFields(prev => ({ ...prev, [field]: true }))
+  }
 
   // Handle URL error parameters
   useEffect(() => {
@@ -99,6 +116,21 @@ export default function AuthLoginPage() {
       console.log('Already processing login, ignoring')
       return
     }
+
+    // Mark all fields as touched for validation display
+    setTouchedFields({
+      email: true,
+      password: true
+    })
+
+    // Validate all fields
+    const validationResult = validateAllFields()
+    if (!validationResult.isValid) {
+      toast.error("Please fix the validation errors", {
+        description: "Check your email and password and try again."
+      })
+      return
+    }
     
     setError("")
     setIsLoading(true)
@@ -113,8 +145,25 @@ export default function AuthLoginPage() {
 
       if (result?.ok) {
         toast.success("Login successful!", {
-          description: "Welcome back! Redirecting to dashboard..."
+          description: "Welcome back! Redirecting..."
         })
+        
+        // Handle return URL or redirect to callback
+        const returnUrl = searchParams.get('returnUrl')
+        if (returnUrl) {
+          // Decode and validate the return URL
+          try {
+            const decodedUrl = decodeURIComponent(returnUrl)
+            // Ensure it's a relative URL for security
+            if (decodedUrl.startsWith('/') && !decodedUrl.startsWith('//')) {
+              router.push(decodedUrl)
+              return
+            }
+          } catch (error) {
+            console.error('Invalid return URL:', error)
+          }
+        }
+        
         router.push("/auth/callback")
       } else {
         // Handle specific error messages
@@ -168,11 +217,18 @@ export default function AuthLoginPage() {
     try {
       console.log('Google login button clicked')
       setIsGoogleLoading(true)
+      
+      // Build callback URL with return URL
+      const returnUrl = searchParams.get('returnUrl')
+      let callbackUrl = '/auth/callback?intent=login'
+      if (returnUrl) {
+        callbackUrl += `&returnUrl=${encodeURIComponent(returnUrl)}`
+      }
+      
       // Use NextAuth signIn with Google provider for existing users
-      // Add a parameter to indicate this is a login attempt
       await signIn('google', {
         redirect: true,
-        callbackUrl: '/auth/callback?intent=login'
+        callbackUrl: callbackUrl
       })
     } catch (error) {
       console.error('Google login error:', error)
@@ -204,10 +260,10 @@ export default function AuthLoginPage() {
 
       <div className="relative z-10 min-h-screen flex">
         {/* Left Side - Form */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8">
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-6">
           <div className="w-full max-w-md">
             {/* Back Button */}
-            <Button variant="ghost" className="mb-6 sm:mb-8 text-slate-600 hover:text-emerald-600" asChild>
+            <Button variant="ghost" className="mb-6 text-slate-600 hover:text-emerald-600" asChild>
               <Link href="/">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Home
@@ -215,24 +271,24 @@ export default function AuthLoginPage() {
             </Button>
 
             {/* Logo */}
-            <div className="text-center mb-6 sm:mb-8">
+            <div className="text-center mb-6">
               <Link href="/" className="inline-block group hover:scale-105 transition-transform">
-                <Logo size={48} textSize="lg" />
+                <Logo size={40} textSize="md" />
               </Link>
             </div>
 
             {/* Login Card */}
             <Card className="backdrop-blur-sm bg-white/90 border-0 shadow-2xl">
               <CardHeader className="text-center pb-2">
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4 relative">
-                  <Sparkles className="w-8 h-8 text-purple-600" />
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-500 rounded-full animate-ping"></div>
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-emerald-100 rounded-xl flex items-center justify-center mx-auto mb-3 relative">
+                  <Sparkles className="w-6 h-6 text-purple-600" />
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full animate-ping"></div>
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2">Welcome Back</h1>
-                <p className="text-slate-600 text-sm sm:text-base">Sign in to continue your journey</p>
+                <h1 className="text-2xl font-bold text-slate-800 mb-1">Welcome Back</h1>
+                <p className="text-slate-600 text-sm">Sign in to continue your journey</p>
               </CardHeader>
 
-              <CardContent className="space-y-6 p-6 sm:p-8">
+              <CardContent className="space-y-4 p-3 sm:p-4">
                 <HydrationBoundary fallback={
                   <div className="space-y-6">
                     <div className="animate-pulse space-y-4">
@@ -244,44 +300,58 @@ export default function AuthLoginPage() {
                     </div>
                   </div>
                 }>
-                  <form onSubmit={handleLogin} className="space-y-6">
+                  <form onSubmit={handleLogin} className="space-y-4">
                   {/* Email Field */}
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <label className="text-sm font-semibold text-slate-700">Email Address</label>
                     <div className="relative group">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-purple-500 transition-colors" />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-purple-500 transition-colors" />
                       <Input
                         type="email"
                         placeholder="Enter your email address"
                         value={formData.email}
-                        onChange={(e) => updateFormData('email', e.target.value)}
-                        className="pl-12 h-12 sm:h-14 border-2 border-slate-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl text-slate-800 bg-white/50"
+                        onChange={(e) => handleFieldChange('email', e.target.value)}
+                        onBlur={() => handleFieldBlur('email')}
+                        className={getFieldClassName('email', "pl-10 h-10 border-2 border-slate-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl text-slate-800 bg-white/50")}
                         required
                       />
                     </div>
+                    {getFieldError('email') && (
+                      <p className="text-red-500 text-sm flex items-center gap-1">
+                        <span className="text-red-500">●</span>
+                        {getFieldError('email')}
+                      </p>
+                    )}
                   </div>
 
                   {/* Password Field */}
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <label className="text-sm font-semibold text-slate-700">Password</label>
                     <div className="relative group">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-purple-500 transition-colors" />
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-purple-500 transition-colors" />
                       <Input
                         type={showPassword ? "text" : "password"}
                         placeholder="Enter your password"
                         value={formData.password}
-                        onChange={(e) => updateFormData('password', e.target.value)}
-                        className="pl-12 pr-12 h-12 sm:h-14 border-2 border-slate-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl text-slate-800 bg-white/50"
+                        onChange={(e) => handleFieldChange('password', e.target.value)}
+                        onBlur={() => handleFieldBlur('password')}
+                        className={getFieldClassName('password', "pl-10 pr-10 h-10 border-2 border-slate-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl text-slate-800 bg-white/50")}
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                       >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    {getFieldError('password') && (
+                      <p className="text-red-500 text-sm flex items-center gap-1">
+                        <span className="text-red-500">●</span>
+                        {getFieldError('password')}
+                      </p>
+                    )}
                   </div>
 
                   {/* Remember Me & Forgot Password */}
@@ -290,7 +360,7 @@ export default function AuthLoginPage() {
                       <Checkbox
                         id="remember"
                         checked={formData.remember}
-                        onCheckedChange={(checked) => updateFormData('remember', checked as boolean)}
+                        onCheckedChange={(checked) => handleFieldChange('remember', checked as boolean)}
                         className="border-slate-300 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
                       />
                       <label htmlFor="remember" className="text-sm text-slate-600 cursor-pointer">
@@ -313,7 +383,7 @@ export default function AuthLoginPage() {
                   <Button
                     type="submit"
                     disabled={isLoading || isGoogleLoading}
-                    className="w-full h-12 sm:h-14 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-200 hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full h-10 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-200 hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? (
                       <div className="flex items-center space-x-2">
@@ -342,11 +412,11 @@ export default function AuthLoginPage() {
                   onClick={handleGoogleLogin}
                   disabled={isLoading || isGoogleLoading}
                   variant="outline"
-                  className="w-full h-12 sm:h-14 bg-white/50 border-2 border-slate-200 hover:border-slate-300 hover:bg-white/70 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full h-10 bg-white/50 border-2 border-slate-200 hover:border-slate-300 hover:bg-white/70 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isGoogleLoading ? (
                     <div className="flex items-center space-x-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-slate-600"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-600"></div>
                       <span>Connecting to Google...</span>
                     </div>
                   ) : (

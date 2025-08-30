@@ -29,13 +29,15 @@ export default function AuthCallbackPage() {
     if (session?.user) {
       const role = session.user.role
       const isNewUser = session.user.isNewUser
+      const returnUrl = searchParams.get('returnUrl')
       
       console.log('User session found:', { 
         name: session.user.name, 
         email: session.user.email, 
         role: session.user.role,
         intent: intent,
-        isNewUser: isNewUser
+        isNewUser: isNewUser,
+        returnUrl: returnUrl
       })
       
       // Handle new Google users who tried to login
@@ -51,14 +53,29 @@ export default function AuthCallbackPage() {
         console.log('Google signup completed for:', session.user.email)
       }
       
-      // Role-based redirect
-      const roleRedirects = {
-        student: "/find-rooms",
-        owner: "/list-property",
-        admin: "/admin"
+      // Determine redirect URL - returnUrl takes priority
+      let redirectUrl
+      if (returnUrl) {
+        try {
+          const decodedUrl = decodeURIComponent(returnUrl)
+          // Ensure it's a relative URL for security
+          if (decodedUrl.startsWith('/') && !decodedUrl.startsWith('//')) {
+            redirectUrl = decodedUrl
+          }
+        } catch (error) {
+          console.error('Invalid return URL:', error)
+        }
       }
-
-      const redirectUrl = roleRedirects[role] || "/find-rooms"
+      
+      // Fallback to role-based redirect if no valid return URL
+      if (!redirectUrl) {
+        const roleRedirects = {
+          student: "/find-rooms",
+          owner: "/list-property",
+          admin: "/admin"
+        }
+        redirectUrl = roleRedirects[role] || "/find-rooms"
+      }
       
       let successMessage
       if (isNewUser && intent === 'login') {
@@ -70,7 +87,7 @@ export default function AuthCallbackPage() {
       }
       
       toast.success("Authentication successful!", {
-        description: `${successMessage} Redirecting to your dashboard...`
+        description: `${successMessage} Redirecting...`
       })
       
       console.log(`Redirecting ${role} user to: ${redirectUrl}`)

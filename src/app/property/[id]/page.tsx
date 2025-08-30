@@ -1,11 +1,12 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { Footer } from "@/components/footer"
+import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 // Simple Google Map embed component
 function PropertyMap({ address }: { address: any }) {
@@ -101,7 +102,18 @@ export default function PropertyDetailPage() {
   const [reviewComment, setReviewComment] = useState("")
   const [submittingReview, setSubmittingReview] = useState(false)
   const params = useParams()
+  const router = useRouter()
   const propertyId = params?.id
+
+  // Protected contact function
+  const handleProtectedContact = (contactAction: () => void) => {
+    if (!user) {
+      // Redirect to login with return URL
+      router.push(`/auth/login?returnUrl=${encodeURIComponent(window.location.pathname)}`)
+      return
+    }
+    contactAction()
+  }
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -112,9 +124,11 @@ export default function PropertyDetailPage() {
           const data = await res.json()
           setPropertyData(data.property)
         } else {
+          console.error(`Property fetch failed: ${res.status} ${res.statusText} for ID: ${propertyId}`)
           setPropertyData(null)
         }
-      } catch {
+      } catch (error) {
+        console.error('Property fetch error:', error)
         setPropertyData(null)
       } finally {
         setLoading(false)
@@ -288,8 +302,40 @@ Thank you!`
   if (loading) {
     return <AuthLoading title="Loading Property" description="Fetching property details..." fullScreen={true} />
   }
+  
   if (!propertyData) {
-    return <div className="min-h-screen flex items-center justify-center text-xl text-red-500">Property not found.</div>
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center max-w-md mx-auto p-8">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Building className="w-8 h-8 text-red-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">Property Not Found</h1>
+            <p className="text-slate-600 mb-6">
+              The property you're looking for doesn't exist or may have been removed.
+            </p>
+            <div className="space-y-3">
+              <Button asChild className="bg-emerald-600 hover:bg-emerald-700">
+                <Link href="/find-rooms">Browse All Properties</Link>
+              </Button>
+              <div>
+                <Button variant="outline" asChild>
+                  <Link href="/">Go to Home</Link>
+                </Button>
+              </div>
+            </div>
+            {process.env.NODE_ENV === 'development' && propertyId && (
+              <div className="mt-6 p-4 bg-slate-100 rounded-lg text-sm text-slate-600">
+                <strong>Debug info:</strong> Requested property ID: {propertyId}
+              </div>
+            )}
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
   }
 
   return (
@@ -1224,10 +1270,10 @@ Thank you!`
                   {propertyData.contactInfo?.phone ? (
                     <Button
                       className="w-full h-12 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold cursor-pointer rounded-lg"
-                      onClick={() => openWhatsApp(propertyData.contactInfo.phone)}
+                      onClick={() => handleProtectedContact(() => openWhatsApp(propertyData.contactInfo.phone))}
                     >
                       <MessageCircle className="w-5 h-5 mr-2" />
-                      Contact Host
+                      {user ? 'Contact Host' : 'Login to Contact Host'}
                     </Button>
                   ) : (
                     <div className="w-full h-12 flex items-center justify-center border border-slate-200 rounded-lg bg-slate-50">
@@ -1240,10 +1286,10 @@ Thank you!`
                       <Button
                         variant="outline"
                         className="h-11 border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
-                        onClick={() => openEmail(propertyData.contactInfo.email)}
+                        onClick={() => handleProtectedContact(() => openEmail(propertyData.contactInfo.email))}
                       >
                         <Mail className="w-4 h-4 mr-2" />
-                        Email
+                        {user ? 'Email' : 'Login to Email'}
                       </Button>
                     )}
                   </div>

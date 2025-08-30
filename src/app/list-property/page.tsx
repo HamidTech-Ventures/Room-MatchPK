@@ -257,9 +257,36 @@ function ListPropertyContent() {
         }
       case 4:
         switch (field) {
-          case 'ownerName': return !formData.ownerName || formData.ownerName.length < 2
-          case 'ownerEmail': return !formData.ownerEmail || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.ownerEmail)
-          case 'ownerPhone': return !formData.ownerPhone || formData.ownerPhone.length < 10
+          case 'ownerName': {
+            if (!formData.ownerName || formData.ownerName.trim().length === 0) return true
+            if (formData.ownerName.trim().length < 2 || formData.ownerName.trim().length > 50) return true
+            if (!/^[a-zA-Z\s'.,-]*$/.test(formData.ownerName)) return true
+            return false
+          }
+          case 'ownerEmail': {
+            if (!formData.ownerEmail || formData.ownerEmail.trim().length === 0) return true
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+            if (!emailPattern.test(formData.ownerEmail) || formData.ownerEmail.length > 254) return true
+            return false
+          }
+          case 'ownerPhone': {
+            if (!formData.ownerPhone || formData.ownerPhone.trim().length === 0) return true
+            const cleanPhone = formData.ownerPhone.replace(/\D/g, '')
+            if (cleanPhone.length < 10 || cleanPhone.length > 15) return true
+            const pakistaniPatterns = [
+              /^(\+92|92|0)?3[0-9]{9}$/, // Mobile numbers
+              /^(\+92|92|0)?[2-9][0-9]{7,10}$/, // Landline numbers
+            ]
+            return !pakistaniPatterns.some(pattern => pattern.test(cleanPhone))
+          }
+          case 'cnicNumber': {
+            if (!formData.cnicNumber || formData.cnicNumber.trim().length === 0) return true
+            const cleanCNIC = formData.cnicNumber.replace(/\D/g, '')
+            if (cleanCNIC.length !== 13) return true
+            if (!/^[1-9][0-9]{12}$/.test(cleanCNIC)) return true
+            if (/(\d)\1{6,}/.test(cleanCNIC)) return true
+            return false
+          }
           default: return false
         }
       default:
@@ -943,15 +970,35 @@ function ListPropertyContent() {
           return uploadedImages.length >= minImages
         } else {
           // Step 4 for other forms: Owner details and terms
+          const nameValid = !!(formData.ownerName && 
+                           formData.ownerName.trim().length >= 2 && 
+                           formData.ownerName.trim().length <= 50 &&
+                           /^[a-zA-Z\s'.,-]*$/.test(formData.ownerName))
+          
           const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-          const ownerValid = !!(formData.ownerName &&
-                               formData.ownerEmail &&
-                               formData.ownerPhone &&
-                               formData.cnicNumber &&
-                               formData.ownerName.length >= 2 &&
-                               emailPattern.test(formData.ownerEmail) &&
-                               formData.ownerPhone.length >= 10 &&
-                               formData.cnicNumber.length >= 13)
+          const emailValid = !!(formData.ownerEmail && 
+                            emailPattern.test(formData.ownerEmail) &&
+                            formData.ownerEmail.length <= 254)
+          
+          const phoneValid = !!(formData.ownerPhone && (() => {
+            const cleanPhone = formData.ownerPhone.replace(/\D/g, '')
+            if (cleanPhone.length < 10 || cleanPhone.length > 15) return false
+            const pakistaniPatterns = [
+              /^(\+92|92|0)?3[0-9]{9}$/, // Mobile numbers
+              /^(\+92|92|0)?[2-9][0-9]{7,10}$/, // Landline numbers
+            ]
+            return pakistaniPatterns.some(pattern => pattern.test(cleanPhone))
+          })())
+          
+          const cnicValid = !!(formData.cnicNumber && (() => {
+            const cleanCNIC = formData.cnicNumber.replace(/\D/g, '')
+            if (cleanCNIC.length !== 13) return false
+            if (!/^[1-9][0-9]{12}$/.test(cleanCNIC)) return false
+            if (/(\d)\1{6,}/.test(cleanCNIC)) return false
+            return true
+          })())
+
+          const ownerValid = nameValid && emailValid && phoneValid && cnicValid
 
           // Check terms acceptance and required documents
           const termsValid = acceptVerify && acceptTerms && acceptCommission
@@ -963,15 +1010,35 @@ function ListPropertyContent() {
       case 5:
         // Step 5 is only for mess form: Owner details and terms
         if (formData.propertyType === 'hostel-mess') {
+          const nameValid = !!(formData.ownerName && 
+                           formData.ownerName.trim().length >= 2 && 
+                           formData.ownerName.trim().length <= 50 &&
+                           /^[a-zA-Z\s'.,-]*$/.test(formData.ownerName))
+          
           const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-          const ownerValid = !!(formData.ownerName &&
-                               formData.ownerEmail &&
-                               formData.ownerPhone &&
-                               formData.cnicNumber &&
-                               formData.ownerName.length >= 2 &&
-                               emailPattern.test(formData.ownerEmail) &&
-                               formData.ownerPhone.length >= 10 &&
-                               formData.cnicNumber.length >= 13)
+          const emailValid = !!(formData.ownerEmail && 
+                            emailPattern.test(formData.ownerEmail) &&
+                            formData.ownerEmail.length <= 254)
+          
+          const phoneValid = !!(formData.ownerPhone && (() => {
+            const cleanPhone = formData.ownerPhone.replace(/\D/g, '')
+            if (cleanPhone.length < 10 || cleanPhone.length > 15) return false
+            const pakistaniPatterns = [
+              /^(\+92|92|0)?3[0-9]{9}$/, // Mobile numbers
+              /^(\+92|92|0)?[2-9][0-9]{7,10}$/, // Landline numbers
+            ]
+            return pakistaniPatterns.some(pattern => pattern.test(cleanPhone))
+          })())
+          
+          const cnicValid = !!(formData.cnicNumber && (() => {
+            const cleanCNIC = formData.cnicNumber.replace(/\D/g, '')
+            if (cleanCNIC.length !== 13) return false
+            if (!/^[1-9][0-9]{12}$/.test(cleanCNIC)) return false
+            if (/(\d)\1{6,}/.test(cleanCNIC)) return false
+            return true
+          })())
+
+          const ownerValid = nameValid && emailValid && phoneValid && cnicValid
 
           // Check terms acceptance and required documents
           const termsValid = acceptVerify && acceptTerms && acceptCommission
@@ -1374,21 +1441,7 @@ function ListPropertyContent() {
                         : "Fill in your property details"}
                     </p>
                   </div>
-                  <div className="flex flex-col items-end space-y-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        // If user is editing, clear the form first
-                        if (editingProperty) {
-                          resetForm()
-                        }
-                        setShowCategoryDialog(true)
-                      }}
-                      className="text-emerald-600 border-emerald-600 hover:bg-emerald-50"
-                    >
-                      Change Property Type
-                    </Button>
+                  <div className="flex flex-col items-end">
                     <FormAutoSaveIndicator
                       hasUnsavedChanges={hasUnsavedChanges()}
                       variant="badge"
