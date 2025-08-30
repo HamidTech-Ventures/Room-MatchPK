@@ -71,9 +71,151 @@ export function OwnerDetailsForm({
   // Track which image is being deleted
   const [deletingImage, setDeletingImage] = useState<'cnicFront' | 'cnicBack' | 'ownerPic' | null>(null)
 
+  // Enhanced validation functions
+  const validateName = (name: string) => {
+    if (!name || name.trim().length === 0) {
+      return { isValid: false, message: "Name is required" }
+    }
+    if (name.trim().length < 2) {
+      return { isValid: false, message: "Name must be at least 2 characters long" }
+    }
+    if (name.trim().length > 50) {
+      return { isValid: false, message: "Name must be less than 50 characters" }
+    }
+    if (!/^[a-zA-Z\s'.,-]*$/.test(name)) {
+      return { isValid: false, message: "Name can only contain letters, spaces, and common punctuation" }
+    }
+    return { isValid: true, message: "Valid name" }
+  }
+
+  const validatePhone = (phone: string) => {
+    if (!phone || phone.trim().length === 0) {
+      return { isValid: false, message: "Phone number is required" }
+    }
+    
+    // Remove all non-digit characters for validation
+    const cleanPhone = phone.replace(/\D/g, '')
+    
+    if (cleanPhone.length < 10) {
+      return { isValid: false, message: "Phone number must be at least 10 digits" }
+    }
+    if (cleanPhone.length > 15) {
+      return { isValid: false, message: "Phone number must be less than 15 digits" }
+    }
+    
+    // Check for Pakistani phone patterns
+    const pakistaniPatterns = [
+      /^(\+92|92|0)?3[0-9]{9}$/, // Mobile numbers
+      /^(\+92|92|0)?[2-9][0-9]{7,10}$/, // Landline numbers
+    ]
+    
+    const isValidPattern = pakistaniPatterns.some(pattern => pattern.test(cleanPhone))
+    if (!isValidPattern) {
+      return { isValid: false, message: "Please enter a valid Pakistani phone number" }
+    }
+    
+    return { isValid: true, message: "Valid phone number" }
+  }
+
+  const validateCNIC = (cnic: string) => {
+    if (!cnic || cnic.trim().length === 0) {
+      return { isValid: false, message: "CNIC number is required" }
+    }
+    
+    // Remove all non-digit characters for validation
+    const cleanCNIC = cnic.replace(/\D/g, '')
+    
+    if (cleanCNIC.length !== 13) {
+      return { isValid: false, message: "CNIC must be exactly 13 digits" }
+    }
+    
+    // Check for valid CNIC pattern (basic validation)
+    if (!/^[1-9][0-9]{12}$/.test(cleanCNIC)) {
+      return { isValid: false, message: "Invalid CNIC format" }
+    }
+    
+    // Check for consecutive same digits (likely fake)
+    if (/(\d)\1{6,}/.test(cleanCNIC)) {
+      return { isValid: false, message: "CNIC contains too many repeated digits" }
+    }
+    
+    return { isValid: true, message: "Valid CNIC number" }
+  }
+
+  const validateEmail = (email: string) => {
+    if (!email || email.trim().length === 0) {
+      return { isValid: false, message: "Email address is required" }
+    }
+    
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+    if (!emailPattern.test(email)) {
+      return { isValid: false, message: "Please enter a valid email address" }
+    }
+    
+    if (email.length > 254) {
+      return { isValid: false, message: "Email address is too long" }
+    }
+    
+    return { isValid: true, message: "Valid email address" }
+  }
+
+  // Enhanced field class function with better validation
   const getFieldClass = (field: string, baseClass = "") => {
-    const invalid = touched[field] && !formData[field]
-    return `${baseClass} ${invalid ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-300 focus:border-emerald-500 focus:ring-emerald-500'}`
+    let validation = { isValid: true, message: "" }
+    
+    // Only validate if field has been touched or has content
+    if (touched[field] || formData[field]) {
+      switch (field) {
+        case 'ownerName':
+          validation = validateName(formData.ownerName || '')
+          break
+        case 'ownerPhone':
+          validation = validatePhone(formData.ownerPhone || '')
+          break
+        case 'ownerEmail':
+          validation = validateEmail(formData.ownerEmail || '')
+          break
+        case 'cnicNumber':
+          validation = validateCNIC(formData.cnicNumber || '')
+          break
+        default:
+          validation = { isValid: !!formData[field], message: "" }
+      }
+    }
+    
+    return `${baseClass} ${!validation.isValid ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-300 focus:border-emerald-500 focus:ring-emerald-500'}`
+  }
+
+  // Enhanced input change handler with validation
+  const handleValidatedInputChange = (field: string, value: string) => {
+    let processedValue = value
+    
+    // Process phone number - allow formatting
+    if (field === 'ownerPhone') {
+      // Remove all non-digit characters except + and spaces
+      processedValue = value.replace(/[^\d+\s-()]/g, '')
+    }
+    
+    // Process CNIC - allow formatting with dashes
+    if (field === 'cnicNumber') {
+      // Remove all non-digit characters except dashes
+      const digitsOnly = value.replace(/\D/g, '')
+      // Auto-format CNIC as user types (XXXXX-XXXXXXX-X)
+      if (digitsOnly.length <= 5) {
+        processedValue = digitsOnly
+      } else if (digitsOnly.length <= 12) {
+        processedValue = `${digitsOnly.slice(0, 5)}-${digitsOnly.slice(5)}`
+      } else {
+        processedValue = `${digitsOnly.slice(0, 5)}-${digitsOnly.slice(5, 12)}-${digitsOnly.slice(12, 13)}`
+      }
+    }
+    
+    // Process name - remove extra spaces and capitalize
+    if (field === 'ownerName') {
+      processedValue = value.replace(/\s+/g, ' ').replace(/^\s+/, '')
+    }
+    
+    handleInputChange(field, processedValue)
   }
 
   const handleImageUpload = async (file: File, type: 'cnicFront' | 'cnicBack' | 'ownerPic') => {
@@ -199,16 +341,16 @@ export function OwnerDetailsForm({
   }
 
   const isFormValid = () => {
-    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+    const nameValidation = validateName(formData.ownerName || '')
+    const phoneValidation = validatePhone(formData.ownerPhone || '')
+    const emailValidation = validateEmail(formData.ownerEmail || '')
+    const cnicValidation = validateCNIC(formData.cnicNumber || '')
+    
     return (
-      formData.ownerName &&
-      formData.ownerName.length >= 2 &&
-      formData.ownerEmail &&
-      emailPattern.test(formData.ownerEmail) &&
-      formData.ownerPhone &&
-      formData.ownerPhone.length >= 10 &&
-      formData.cnicNumber &&
-      formData.cnicNumber.length >= 13 &&
+      nameValidation.isValid &&
+      phoneValidation.isValid &&
+      emailValidation.isValid &&
+      cnicValidation.isValid &&
       acceptVerify &&
       acceptTerms &&
       acceptCommission &&
@@ -237,17 +379,19 @@ export function OwnerDetailsForm({
               <Input
                 placeholder="Enter your full name (minimum 2 characters)"
                 value={formData.ownerName}
-                onChange={(e) => handleInputChange("ownerName", e.target.value)}
+                onChange={(e) => handleValidatedInputChange("ownerName", e.target.value)}
                 className={getFieldClass("ownerName", "h-12")}
                 onBlur={() => setTouched(prev => ({ ...prev, ownerName: true }))}
               />
               <div className="text-xs">
-                <span className={`${formData.ownerName && formData.ownerName.length >= 2 ? 'text-green-600' : 'text-red-500'}`}>
-                  {formData.ownerName ? `${formData.ownerName.length}/2 characters` : '0/2 characters (minimum)'}
-                </span>
-                {formData.ownerName && formData.ownerName.length < 2 && (
-                  <span className="text-red-500 ml-2">Need {2 - formData.ownerName.length} more character(s)</span>
-                )}
+                {(() => {
+                  const validation = validateName(formData.ownerName || '')
+                  return (
+                    <span className={validation.isValid ? 'text-green-600' : 'text-red-500'}>
+                      {validation.isValid ? '✓' : '✗'} {validation.message}
+                    </span>
+                  )
+                })()}
               </div>
             </div>
 
@@ -257,19 +401,21 @@ export function OwnerDetailsForm({
               </Label>
               <Input
                 type="tel"
-                placeholder="e.g., +92 300 1234567 (minimum 10 digits)"
+                placeholder="e.g., +92 300 1234567 or 03001234567"
                 value={formData.ownerPhone}
-                onChange={(e) => handleInputChange("ownerPhone", e.target.value)}
+                onChange={(e) => handleValidatedInputChange("ownerPhone", e.target.value)}
                 className={getFieldClass("ownerPhone", "h-12")}
                 onBlur={() => setTouched(prev => ({ ...prev, ownerPhone: true }))}
               />
               <div className="text-xs">
-                <span className={`${formData.ownerPhone && formData.ownerPhone.length >= 10 ? 'text-green-600' : 'text-red-500'}`}>
-                  {formData.ownerPhone ? `${formData.ownerPhone.length}/10 characters` : '0/10 characters (minimum)'}
-                </span>
-                {formData.ownerPhone && formData.ownerPhone.length < 10 && (
-                  <span className="text-red-500 ml-2">Need {10 - formData.ownerPhone.length} more character(s)</span>
-                )}
+                {(() => {
+                  const validation = validatePhone(formData.ownerPhone || '')
+                  return (
+                    <span className={validation.isValid ? 'text-green-600' : 'text-red-500'}>
+                      {validation.isValid ? '✓' : '✗'} {validation.message}
+                    </span>
+                  )
+                })()}
               </div>
             </div>
 
@@ -279,22 +425,21 @@ export function OwnerDetailsForm({
               </Label>
               <Input
                 type="email"
-                placeholder="your.email@example.com (valid email format required)"
+                placeholder="your.email@example.com"
                 value={formData.ownerEmail}
-                onChange={(e) => handleInputChange("ownerEmail", e.target.value)}
+                onChange={(e) => handleValidatedInputChange("ownerEmail", e.target.value)}
                 className={getFieldClass("ownerEmail", "h-12")}
                 onBlur={() => setTouched(prev => ({ ...prev, ownerEmail: true }))}
               />
               <div className="text-xs">
-                {formData.ownerEmail ? (
-                  /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.ownerEmail) ? (
-                    <span className="text-green-600">✓ Valid email format</span>
-                  ) : (
-                    <span className="text-red-500">✗ Please enter a valid email address</span>
+                {(() => {
+                  const validation = validateEmail(formData.ownerEmail || '')
+                  return (
+                    <span className={validation.isValid ? 'text-green-600' : 'text-red-500'}>
+                      {validation.isValid ? '✓' : '✗'} {validation.message}
+                    </span>
                   )
-                ) : (
-                  <span className="text-red-500">Email address is required</span>
-                )}
+                })()}
               </div>
             </div>
 
@@ -304,22 +449,22 @@ export function OwnerDetailsForm({
               </Label>
               <Input
                 type="text"
-                placeholder="e.g., 12345-1234567-1 (13 digits with dashes)"
+                placeholder="e.g., 12345-1234567-1"
                 value={formData.cnicNumber || ''}
-                onChange={(e) => handleInputChange("cnicNumber", e.target.value)}
+                onChange={(e) => handleValidatedInputChange("cnicNumber", e.target.value)}
                 className={getFieldClass("cnicNumber", "h-12")}
                 onBlur={() => setTouched(prev => ({ ...prev, cnicNumber: true }))}
+                maxLength={15} // 13 digits + 2 dashes
               />
               <div className="text-xs">
-                {formData.cnicNumber ? (
-                  formData.cnicNumber.length >= 13 ? (
-                    <span className="text-green-600">✓ CNIC number entered</span>
-                  ) : (
-                    <span className="text-red-500">✗ Please enter complete CNIC number</span>
+                {(() => {
+                  const validation = validateCNIC(formData.cnicNumber || '')
+                  return (
+                    <span className={validation.isValid ? 'text-green-600' : 'text-red-500'}>
+                      {validation.isValid ? '✓' : '✗'} {validation.message}
+                    </span>
                   )
-                ) : (
-                  <span className="text-red-500">CNIC number is required</span>
-                )}
+                })()}
               </div>
             </div>
           </div>

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { EnhancedImageUpload } from "@/components/ui/enhanced-image-upload"
 import { OwnerDetailsForm } from "@/components/forms/owner-details-form"
+import { useFormValidation, validationSchemas } from "@/lib/form-validation"
 import { 
   Upload, 
   ChefHat, 
@@ -120,6 +121,21 @@ export function MessFormMultiStep({
   isSubmitting = false,
   editingProperty = null
 }: MessFormProps) {
+  
+  const {
+    validateAllFields,
+    getFieldError,
+    isFieldValid: isFieldValidHook,
+    getFieldClassName
+  } = useFormValidation(formData, validationSchemas.mess, touched)
+
+  const handleFieldChange = (field: string, value: any) => {
+    handleInputChange(field, value)
+  }
+
+  const handleFieldBlur = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }))
+  }
   
   // Debug logging
   React.useEffect(() => {
