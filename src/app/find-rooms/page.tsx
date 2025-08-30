@@ -238,7 +238,7 @@ function FindRoomsContent() {
       }
     }
     fetchProperties(pagination.page)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [pagination.page, filters])
 
   // Fetch property counts when filters change (excluding propertyType and page)
