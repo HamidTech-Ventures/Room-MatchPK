@@ -449,7 +449,7 @@ function FindRoomsContent() {
     }
   };
   return (
-    <div className="min-h-screen bg-[#f7f7f7]">
+    <div className="min-h-screen bg-[#f7f7f7] pb-9 md:pb-0">
       {/* Custom Navbar for Find Rooms - Hidden on mobile */}
       <nav className="bg-[#f7f7f7] border-b-0 shadow-none hidden md:block">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12">
@@ -620,6 +620,7 @@ function FindRoomsContent() {
           <div className="flex gap-2 overflow-x-auto scrollbar-hide">
             {[
               { id: 'hostel', label: 'Hostels', icon: '/Hostel.png' },
+
               { id: 'apartment', label: 'Apartments', icon: '/apartment.png' },
               { id: 'house', label: 'Homes', icon: '/house.png' },
               { id: 'office', label: 'Office', icon: '/office.jpg' },
@@ -1129,11 +1130,9 @@ function FindRoomsContent() {
                         <div className="flex items-center justify-between px-0 py-0">
                           <div className="flex items-center space-x-4">
                             <div className="flex items-center space-x-3">
-                              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center">
-                                <MapPin className="w-5 h-5 text-white" />
-                              </div>
+                              
                               <h2 className="text-xl sm:text-2xl font-bold text-slate-800">
-                                Popular homes in {city}
+                                Popular Properties  in {city}
                               </h2>
                             </div>
                           </div>
@@ -1417,6 +1416,97 @@ function FindRoomsContent() {
                     Next →
                   </Button>
                 </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Navigation Bar - Mobile Only (compact, bottom-aligned) */}
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 h-9 overflow-hidden bg-white border-t border-slate-200 z-40"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <div className="flex items-end justify-between h-full px-2 pb-1">
+          {/* Home */}
+          <button
+            aria-label="Home"
+            onClick={() => router.push('/find-rooms')}
+            className="w-9 h-9 flex items-center justify-center rounded-md"
+            title="Home"
+          >
+            <Home className="w-5 h-5 text-slate-700" />
+            <span className="sr-only">Home</span>
+          </button>
+
+          {/* Property Types / Browse */}
+          <button
+            aria-label="Browse"
+            onClick={() => router.push('/find-rooms')}
+            className="w-9 h-9 flex items-center justify-center rounded-md"
+            title="Browse"
+          >
+            <Building className="w-5 h-5 text-slate-700" />
+            <span className="sr-only">Browse</span>
+          </button>
+
+          {/* Chat (toggle unified chat) */}
+          <button
+            aria-label="Chat"
+            onClick={() => toggleChat()}
+            className="w-9 h-9 flex items-center justify-center rounded-md"
+            title="Chat"
+          >
+            <MessageCircle className="w-5 h-5 text-emerald-600" />
+            <span className="sr-only">Chat</span>
+          </button>
+
+          {/* Filters */}
+          <button
+            aria-label="Filters"
+            onClick={() => setShowFilters(true)}
+            className="w-9 h-9 flex items-center justify-center rounded-md"
+            title="Filters"
+          >
+            <SlidersHorizontal className="w-5 h-5 text-slate-700" />
+            <span className="sr-only">Filters</span>
+          </button>
+
+          {/* Profile */}
+          <div className="relative profile-dropdown-container">
+            <button
+              aria-label="Profile"
+              onClick={() => setShowProfile(!showProfile)}
+              className="w-9 h-9 flex items-center justify-center rounded-md"
+              title="Profile"
+            >
+              {user ? (
+                <Avatar className="w-7 h-7">
+                  <AvatarImage src={user.avatar || ''} alt={user.name} />
+                  <AvatarFallback className="bg-emerald-100 text-emerald-600 text-xs font-semibold">
+                    {user.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+              ) : (
+                <User className="w-5 h-5 text-slate-700" />
+              )}
+              <span className="sr-only">Profile</span>
+            </button>
+
+            {/* Small profile dropdown for mobile */}
+            {showProfile && (
+              <div className="absolute bottom-12 right-0 w-56 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50">
+                {user ? (
+                  <>
+                    <Link href="/my-bookings" className="block px-4 py-2 text-slate-700 hover:bg-slate-50">My Bookings</Link>
+                    <button onClick={logout} className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50">Logout</button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/auth/login" className="block px-4 py-2 text-emerald-600 hover:bg-emerald-50">Login</Link>
+                    <Link href="/signup" className="block px-4 py-2 text-emerald-600 hover:bg-emerald-50">Sign Up</Link>
+                  </>
+                )}
               </div>
             )}
           </div>
