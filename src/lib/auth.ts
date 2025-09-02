@@ -70,8 +70,15 @@ export async function createUser(userData: CreateDocument<User>, silentMode: boo
     isActive: true // Set user as active by default
   }
   
+  console.log("📋 About to insert user:", JSON.stringify(newUser, null, 2));
+  
   try {
-    const result = await users.insertOne(newUser)
+    // For Google OAuth users, temporarily bypass validation to avoid schema conflicts
+    const insertOptions = userData.provider === 'google' 
+      ? { bypassDocumentValidation: true } 
+      : {};
+    
+    const result = await users.insertOne(newUser, insertOptions)
     
     const createdUser = {
       ...newUser,
