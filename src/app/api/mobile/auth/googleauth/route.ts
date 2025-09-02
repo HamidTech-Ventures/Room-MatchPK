@@ -56,7 +56,8 @@ async function findOrCreateUser(email: string, name: string | undefined, intent:
     email: newUser.email,
     name: newUser.name,
     role: newUser.role,
-    avatar: newUser.avatar
+    avatar: newUser.avatar 
+    
   }
 }
 
