@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   // Disable ESLint during builds
   eslint: {
     ignoreDuringBuilds: true,
+
   },
   // Disable TypeScript errors during builds
   typescript: {
@@ -40,6 +41,11 @@ const nextConfig: NextConfig = {
   assetPrefix: process.env.NODE_ENV === 'production' ? '' : '',
   trailingSlash: false,
   /* config options here */
+
+  experimental: {
+    optimizeCss: false, // disable lightningcss → fallback to PostCSS (fix for Tailwind builds on Vercel)
+  },
+  
 };
 
 export default nextConfig;
