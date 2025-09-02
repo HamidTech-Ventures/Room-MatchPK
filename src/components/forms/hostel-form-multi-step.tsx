@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { EnhancedImageUpload } from "@/components/ui/enhanced-image-upload"
 import { OwnerDetailsForm } from "@/components/forms/owner-details-form"
+import { useFormValidation, validationSchemas } from "@/lib/form-validation"
 import { 
   Upload, 
   Users, 
@@ -117,49 +118,93 @@ export function HostelFormMultiStep({
   editingProperty
 }: HostelFormMultiStepProps) {
 
+  const {
+    validateAllFields,
+    getFieldError,
+    isFieldValid,
+    getFieldClassName
+  } = useFormValidation(formData, validationSchemas.property, touched)
+
+  const handleFieldChange = (field: string, value: any) => {
+    handleInputChange(field, value)
+  }
+
+  const handleFieldBlur = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }))
+  }
+
   // Step validation functions
   const validateStep1 = () => {
     console.log('=== STEP 1 VALIDATION DEBUG ===')
     console.log('formData:', formData)
     console.log('propertySubType:', propertySubType)
     
-    // Basic required fields
-    const requiredFields = ['propertyName', 'address', 'city', 'area']
-    
-    requiredFields.forEach(field => {
-      const value = formData[field]
-      const isValid = value && value.trim() !== ''
-      console.log(`${field}: "${value}" - ${isValid ? 'VALID' : 'INVALID'}`)
+    // Mark all step 1 fields as touched for validation
+    const step1Fields = ['propertyName', 'propertyType', 'address', 'city', 'area']
+    const updatedTouched = { ...touched }
+    step1Fields.forEach(field => {
+      updatedTouched[field] = true
     })
+    setTouched(updatedTouched)
+
+    // Use the validation system to check step 1 fields
+    const validationResult = validateAllFields()
+    const step1Errors = Object.keys(validationResult.errors).filter(field => 
+      step1Fields.includes(field)
+    )
     
-    // Check propertyType separately since it might be optional in some cases
-    console.log(`propertyType: "${formData.propertyType}" - ${formData.propertyType ? 'VALID' : 'INVALID'}`)
-    
-    const basicValid = requiredFields.every(field => formData[field] && formData[field].trim() !== '')
-    console.log('Basic fields valid:', basicValid)
-    console.log('PropertyType valid:', !!formData.propertyType)
-    
-    const isValid = basicValid && !!formData.propertyType
+    const isValid = step1Errors.length === 0
+    console.log('Step 1 validation errors:', step1Errors)
     console.log('Step 1 overall valid:', isValid)
     return isValid
   }
 
   const validateStep2 = () => {
-    if (propertySubType === 'hostel') {
-      return formData.totalRooms && formData.availableRooms && formData.pricePerBed && formData.securityDeposit
-    } else if (propertySubType === 'house') {
-      return formData.houseSize && formData.monthlyRent && formData.securityDeposit && formData.furnishingStatus
-    } else if (propertySubType === 'office') {
-      return formData.officeSize && formData.monthlyRent && formData.securityDeposit && formData.furnishingStatus
-    } else if (propertySubType === 'apartment') {
-      return formData.houseSize && formData.monthlyRent && formData.securityDeposit && formData.furnishingStatus
-    }
-    return true
+    console.log('=== STEP 2 VALIDATION DEBUG ===')
+    
+    const step2Fields = propertySubType === 'hostel' 
+      ? ['totalRooms', 'availableRooms', 'pricePerBed', 'genderPreference']
+      : propertySubType === 'house' 
+        ? ['houseSize', 'monthlyRent', 'securityDeposit', 'furnishingStatus']
+        : propertySubType === 'office' 
+          ? ['officeSize', 'monthlyRent', 'securityDeposit', 'furnishingStatus']
+          : ['houseSize', 'monthlyRent', 'securityDeposit', 'furnishingStatus']
+    
+    // Mark all step 2 fields as touched
+    const updatedTouched = { ...touched }
+    step2Fields.forEach(field => {
+      updatedTouched[field] = true
+    })
+    setTouched(updatedTouched)
+
+    // Check validation for step 2 fields
+    const validationResult = validateAllFields()
+    const step2Errors = Object.keys(validationResult.errors).filter(field => 
+      step2Fields.includes(field)
+    )
+    
+    const isValid = step2Errors.length === 0
+    console.log('Step 2 validation errors:', step2Errors)
+    console.log('Step 2 overall valid:', isValid)
+    return isValid
   }
 
   const validateStep3 = () => {
-    // Amenities and additional features validation
-    return true // Optional step
+    // Step 3: Description is required
+    const step3Fields = ['description']
+    
+    const updatedTouched = { ...touched }
+    step3Fields.forEach(field => {
+      updatedTouched[field] = true
+    })
+    setTouched(updatedTouched)
+
+    const validationResult = validateAllFields()
+    const step3Errors = Object.keys(validationResult.errors).filter(field => 
+      step3Fields.includes(field)
+    )
+    
+    return step3Errors.length === 0
   }
 
   const validateStep4 = () => {
@@ -169,9 +214,23 @@ export function HostelFormMultiStep({
 
   const validateStep5 = () => {
     // Owner details validation
-    const ownerFieldsValid = formData.ownerName && formData.ownerEmail && formData.ownerPhone && formData.cnicNumber
+    const step5Fields = ['ownerName', 'ownerEmail', 'ownerPhone', 'cnicNumber']
+    
+    const updatedTouched = { ...touched }
+    step5Fields.forEach(field => {
+      updatedTouched[field] = true
+    })
+    setTouched(updatedTouched)
+
+    const validationResult = validateAllFields()
+    const step5Errors = Object.keys(validationResult.errors).filter(field => 
+      step5Fields.includes(field)
+    )
+    
+    const ownerFieldsValid = step5Errors.length === 0
     const documentsValid = cnicPicFront && cnicPicBack && ownerPic
     const agreementsValid = acceptVerify && acceptTerms && acceptCommission
+    
     return ownerFieldsValid && documentsValid && agreementsValid
   }
 
@@ -321,18 +380,17 @@ export function HostelFormMultiStep({
                     "e.g., Al-Rehman Boys Hostel (minimum 3 characters)"
                   }
                   value={formData.propertyName}
-                  onChange={(e) => handleInputChange("propertyName", e.target.value)}
-                  className="h-12"
+                  onChange={(e) => handleFieldChange("propertyName", e.target.value)}
+                  onBlur={() => handleFieldBlur("propertyName")}
+                  className={getFieldClassName("propertyName", "h-12")}
                   required
                 />
-                <div className="text-xs">
-                  <span className={`${formData.propertyName && formData.propertyName.length >= 3 ? 'text-green-600' : 'text-red-500'}`}>
-                    {formData.propertyName ? `${formData.propertyName.length}/3 characters` : '0/3 characters (minimum)'}
-                  </span>
-                  {formData.propertyName && formData.propertyName.length < 3 && (
-                    <span className="text-red-500 ml-2">Need {3 - formData.propertyName.length} more character(s)</span>
-                  )}
-                </div>
+                {getFieldError('propertyName') && (
+                  <p className="text-red-500 text-sm flex items-center gap-1">
+                    <span className="text-red-500">●</span>
+                    {getFieldError('propertyName')}
+                  </p>
+                )}
               </div>
 
               {/* Property Type */}
@@ -340,8 +398,8 @@ export function HostelFormMultiStep({
                 <Label className="text-sm font-semibold text-slate-700">
                   Category <span className="text-red-500">*</span>
                 </Label>
-                <Select value={formData.propertyType} onValueChange={(value) => handleInputChange("propertyType", value)}>
-                  <SelectTrigger className="h-12">
+                <Select value={formData.propertyType} onValueChange={(value) => handleFieldChange("propertyType", value)}>
+                  <SelectTrigger className={getFieldClassName("propertyType", "h-12")}>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -425,8 +483,8 @@ export function HostelFormMultiStep({
                 <Label className="text-sm font-semibold text-slate-700">
                   City <span className="text-red-500">*</span>
                 </Label>
-                <Select value={formData.city} onValueChange={(value) => handleInputChange("city", value)}>
-                  <SelectTrigger className="h-12">
+                <Select value={formData.city} onValueChange={(value) => handleFieldChange("city", value)}>
+                  <SelectTrigger className={getFieldClassName("city", "h-12")}>
                     <SelectValue placeholder="Select city" />
                   </SelectTrigger>
                   <SelectContent>
@@ -438,6 +496,12 @@ export function HostelFormMultiStep({
                     <SelectItem value="peshawar">Peshawar</SelectItem>
                   </SelectContent>
                 </Select>
+                {getFieldError('city') && (
+                  <p className="text-red-500 text-sm flex items-center gap-1">
+                    <span className="text-red-500">●</span>
+                    {getFieldError('city')}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -447,10 +511,17 @@ export function HostelFormMultiStep({
                 <Input
                   placeholder="e.g., Gulberg, DHA, Johar Town"
                   value={formData.area}
-                  onChange={(e) => handleInputChange("area", e.target.value)}
-                  className="h-12"
+                  onChange={(e) => handleFieldChange("area", e.target.value)}
+                  onBlur={() => handleFieldBlur("area")}
+                  className={getFieldClassName("area", "h-12")}
                   required
                 />
+                {getFieldError('area') && (
+                  <p className="text-red-500 text-sm flex items-center gap-1">
+                    <span className="text-red-500">●</span>
+                    {getFieldError('area')}
+                  </p>
+                )}
               </div>
             </div>
           </div>

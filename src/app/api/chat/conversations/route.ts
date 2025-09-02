@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     const userObjectId = user._id
 
     // Get all conversations where the user is a participant (try both formats)
-    let conversations = await conversationsCollection
+    const conversations = await conversationsCollection
       .find({
         'participants.userId': userObjectId
       })

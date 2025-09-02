@@ -26,7 +26,7 @@ export function ChatToggle() {
 
   return (
     <>
-      <div className="fixed bottom-6 right-6 z-40">
+      <div className="hidden md:block fixed bottom-6 right-6 z-40">
         {/* Green Chat Button */}
         <Button
           onClick={() => setIsChatOpen(true)}

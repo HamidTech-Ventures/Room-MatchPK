@@ -41,7 +41,7 @@ export default function RootLayout({
         <link rel="manifest" href="/site.webmanifest" />
         <meta name="theme-color" content="#10b981" />
       </head>
-      <body className="antialiased" suppressHydrationWarning>
+      <body className="antialiased scroll-smooth" suppressHydrationWarning>
         <ClientProviders>
           {children}
           <ChatToggle />
