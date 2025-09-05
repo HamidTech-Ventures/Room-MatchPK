@@ -43,8 +43,8 @@ export function Logo({
     </div>
   )
 
-  // Use SVG logo as main source
-  const logoSources = ['/RoomMatch Pk Logo.svg']
+  // Use JPG logo as main source
+  const logoSources = ['/LOGOs.jpg']
   const currentSource = logoSources[0]
 
   const handleImageError = () => {
