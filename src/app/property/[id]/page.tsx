@@ -547,16 +547,43 @@ Thank you!`
           </div>
 
           {/* View all photos button */}
-          <div className="mt-4 flex justify-end">
-            <Button
-              variant="outline"
-              onClick={() => setShowAllImages(true)}
-              className="bg-white border-slate-300 text-slate-700 hover:bg-slate-50"
-            >
-              <Camera className="w-4 h-4 mr-2" />
-              Show all {getImageUrls().length} photos
-            </Button>
-          </div>
+         <div className="mt-4 flex justify-end">
+  <Button
+    variant="outline"
+    onClick={() => setShowAllImages(true)}
+    className="bg-white border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
+  >
+    <Camera className="w-4 h-4 mr-2" />
+    Show all {getImageUrls().length} photos
+  </Button>
+</div>
+
+{/* Conditional rendering */}
+{showAllImages && (
+  <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+    <div className="bg-white p-4 rounded-lg max-w-4xl w-full relative">
+      <button
+        onClick={() => setShowAllImages(false)}
+        className="absolute top-1 right-1 text-black font-bold text-4xl hover:text-green-300 cursor-pointer"
+      >
+        ✕
+      </button>
+
+      <div className="grid grid-cols-3 gap-4">
+        {getImageUrls().map((url, index) => (
+          <img
+            key={index}
+            src={url}
+            alt={`Image ${index}`}
+            className="w-full h-48 object-cover rounded-lg"
+          />
+        ))}
+      </div>
+    </div>
+  </div>
+)}
+
+
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

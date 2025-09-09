@@ -1164,13 +1164,13 @@ function FindRoomsContent() {
                     const cityProperties = propertiesByCity[city]
 
                     return (
-                      <div key={city} className="space-y-6">
+                      <div key={city} className="space-y-4">
                         {/* City Header - no background, border, shadow, or property count */}
-                        <div className="flex items-center justify-between px-0 py-0">
+                        <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-4">
                             <div className="flex items-center space-x-3">
                               <h2 className="text-xl sm:text-2xl font-bold text-slate-800">
-                                Popular Properties in {city}
+                                Properties in {city}
                               </h2>
                             </div>
                           </div>
@@ -1229,9 +1229,9 @@ function FindRoomsContent() {
                           {/* Scroll container */}
                           <div
                             id={`scroll-${city}`}
-                            className="property-scroll-container grid grid-cols-3 md:grid-cols-6 gap-4 pb-4 px-1"
+                            className="property-scroll-container grid grid-cols-3 md:grid-cols-6 gap-4 pb-0 px-1"
                           >
-                            {cityProperties.map((property: any) => {
+                            {cityProperties.slice(0, 6).map((property: any) => {
                               // Extract image URL properly - handle multiple formats
                               const imageUrl = (() => {
                                 if (Array.isArray(property.images) && property.images.length > 0) {
