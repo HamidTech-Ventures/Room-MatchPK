@@ -1229,7 +1229,7 @@ function FindRoomsContent() {
                           {/* Scroll container */}
                           <div
                             id={`scroll-${city}`}
-                            className="property-scroll-container grid grid-cols-3 md:grid-cols-6 gap-4 pb-0 px-1"
+                            className="property-scroll-container grid grid-cols-3 md:grid-cols-6 gap-4  px-1"
                           >
                             {cityProperties.slice(0, 6).map((property: any) => {
                               // Extract image URL properly - handle multiple formats
@@ -1522,16 +1522,7 @@ function FindRoomsContent() {
             <span className="sr-only">Chat</span>
           </button>
 
-          {/* Filters */}
-          <button
-            aria-label="Filters"
-            onClick={() => setShowFilters(true)}
-            className="w-9 h-9 flex items-center justify-center rounded-md"
-            title="Filters"
-          >
-            <SlidersHorizontal className="w-5 h-5 text-slate-700" />
-            <span className="sr-only">Filters</span>
-          </button>
+      
 
           {/* Profile */}
           <div className="relative profile-dropdown-container">

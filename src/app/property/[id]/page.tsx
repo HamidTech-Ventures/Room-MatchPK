@@ -554,7 +554,7 @@ Thank you!`
     className="bg-white border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
   >
     <Camera className="w-4 h-4 mr-2" />
-    Show all {getImageUrls().length} photos
+    Show all {getImageUrls().length} photos 
   </Button>
 </div>
 
@@ -702,34 +702,9 @@ Thank you!`
 
             {/* Where you'll sleep - Room Details */}
             <div className="mb-8">
-              <h2 className="text-xl font-semibold text-slate-900 mb-6">Where you'll sleep</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Room/Bed Information */}
-                <div className="border border-slate-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-                  <div className="aspect-square bg-slate-100 rounded-lg mb-4 relative overflow-hidden">
-                    {(() => {
-                      const images = getImageUrls()
-                      const roomImage = images.find((img: string) => img) || '/placeholder.svg'
-                      return (
-                        <Image
-                          src={roomImage}
-                          alt="Bedroom"
-                          fill
-                          className="object-cover"
-                        />
-                      )
-                    })()}
-                  </div>
-                  <h3 className="font-semibold text-slate-900 mb-2">
-                    {propertyData.propertyType === "hostel-mess" ? "Mess Hall" : "Bedroom"}
-                  </h3>
-                  <p className="text-sm text-slate-600">
-                    {propertyData.propertyType === "hostel-mess"
-                      ? `Dining space for ${propertyData.totalRooms || 0} people`
-                      : `${propertyData.totalRooms || 0} beds available`
-                    }
-                  </p>
-                </div>
+              
 
                 {/* Common area if applicable */}
                 {propertyData.amenities?.some((amenity: string) =>
@@ -769,11 +744,7 @@ Thank you!`
                         {propertyData.totalReviews > 0 ? ` ${propertyData.totalReviews} reviews` : ' New host'}
                       </p>
                       {/* Owner details */}
-                      {propertyData.owner.email && (
-                        <div className="mt-2 text-slate-700">
-                          <span className="font-semibold">Email:</span> {propertyData.owner.email}
-                        </div>
-                      )}
+                      
                       {propertyData.owner.phone && (
                         <div className="mt-1 text-slate-700">
                           <span className="font-semibold">Phone:</span> {propertyData.owner.phone}

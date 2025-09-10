@@ -22,7 +22,7 @@ export function Navbar() {
     try {
       await signOut({ callbackUrl: '/' })
     } catch (error) {
-      console.error('Logout error:', error)
+      console.error('Logout error:', error) 
     }
   }
 
