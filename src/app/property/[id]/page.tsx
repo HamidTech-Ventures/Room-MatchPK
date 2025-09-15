@@ -659,7 +659,7 @@ Thank you!`
               <h2 className="text-xl font-semibold text-slate-900 mb-4">About this place</h2>
               <p className="text-slate-600 leading-relaxed">{propertyData.description || 'No description available.'}</p>
             </div>
-
+ 
             {/* What this place offers - Amenities */}
             {Array.isArray(propertyData.amenities) && propertyData.amenities.length > 0 && (
               <div className="mb-8">

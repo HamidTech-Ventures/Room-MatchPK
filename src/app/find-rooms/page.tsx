@@ -481,26 +481,31 @@ function FindRoomsContent() {
 
             {/* Property Type Navigation - Center, increased spacing and font size */}
             <div className="flex-1 flex justify-center min-w-0 mx-4 sm:mx-8">
-              <div className="flex items-center space-x-6 overflow-x-auto scrollbar-hide max-w-full">
-                <div className="flex items-center space-x-6 min-w-max px-2">
-                  {PROPERTY_TYPES.filter((type) => type.id !== "all").map((type) => {
+              <div className="flex items-center space-x-2 overflow-x-auto scrollbar-hide max-w-full">
+                <div className="flex items-center space-x-4 min-w-max px-2">
+                  {[
+                    { id: "hostel", label: "Hostels", icon: "/Hostel.png" },
+                    { id: "apartment", label: "Apartments", icon: "/apartment.png" },
+                    { id: "house", label: "Homes", icon: "/house.png" },
+                    { id: "office", label: "Office", icon: "/office.jpg" },
+                    { id: "hostel-mess", label: "Mess", icon: "/mess.png" },
+                  ].map((type) => {
                     const isActive = filters.propertyType === type.id
                     return (
                       <Button
                         key={type.id}
                         variant={isActive ? "default" : "ghost"}
                         onClick={() => handlePropertyTypeChange(type.id)}
-                        className={`group flex items-center px-6 py-3 rounded-xl whitespace-nowrap text-lg font-bold ${isActive ? "bg-emerald-500 text-white" : "text-slate-600 hover:text-emerald-600"}`}
+                        className={`group flex items-center space-x-2 px-4 py-2 rounded-xl whitespace-nowrap text-base font-semibold ${isActive ? "bg-emerald-500 text-white" : "text-slate-600 hover:text-emerald-600"}`}
                       >
                         <Image
                           src={type.icon || "/placeholder.svg"}
                           alt={type.label + " icon"}
-                          width={28}
-                          height={28}
-                          className={`rounded object-contain ${isActive ? "" : "opacity-80"}`}
-                          style={{ minWidth: 28, minHeight: 28 }}
+                          width={24}
+                          height={24}
+                          className={`rounded-md object-contain ${isActive ? "" : "opacity-80"}`}
                         />
-                        <span className="ml-0">{type.label}</span>
+                        <span>{type.label}</span>
                       </Button>
                     )
                   })}
@@ -509,6 +514,14 @@ function FindRoomsContent() {
             </div>
             {/* Profile icon only, much larger for better appearance */}
             <div className="flex items-center flex-shrink-0">
+              <Link
+                href="/list-property"
+                className="mr-4 text-slate-700 hover:text-emerald-600 font-medium flex items-center space-x-2 transition-colors"
+              >
+                <Building className="w-5 h-5" />
+                <span className="text-base">Become a Host</span>
+              </Link>
+
               <div className="relative profile-dropdown-container">
                 <Button
                   variant="ghost"
@@ -602,7 +615,7 @@ function FindRoomsContent() {
       </nav>
 
       {/* Mobile Search Section - Single Clean Design */}
-      <div className="md:hidden bg-white">
+      <div className="md:hidden bg-white sticky top-0 z-50 shadow">
         {/* Main Search Bar - Reduced Size */}
         <div className="px-4 py-3">
           <div className="relative flex items-center gap-2">
@@ -610,7 +623,7 @@ function FindRoomsContent() {
               <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search hostels, cite"
+                placeholder="Search hostels, city"
                 value={filters.searchQuery}
                 onChange={(e) => handleFilterChange("searchQuery", e.target.value)}
                 className="w-full pl-8 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-colors"
@@ -683,7 +696,7 @@ function FindRoomsContent() {
       </div>
 
       {/* Desktop Search Bar Section - Hidden on mobile */}
-      <div className="hidden md:block bg-[#f7f7f7] border-b-0">
+      <div className="hidden md:block bg-[#f7f7f7] border-b-0 sticky top-0 z-50 shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="bg-[#f7f7f7] rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-none border-0 flex flex-col gap-4">
             <div className="flex justify-center items-center">
@@ -1188,10 +1201,11 @@ function FindRoomsContent() {
                           <button
                             className="nav-arrow absolute left-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 bg-white rounded-full shadow-md border border-slate-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:border-slate-300"
                             onClick={() => {
-                              const container = document.getElementById(`scroll-${city}`)
-                              if (container) {
-                                container.scrollBy({ left: -180, behavior: "smooth" })
-                              }
+                              const container = document.getElementById(`scroll-${city}`);
+                              container?.scrollBy({
+                                left: -container.clientWidth,
+                                behavior: "smooth",
+                              });
                             }}
                             aria-label={`Scroll left for ${city} properties`}
                           >
@@ -1209,10 +1223,11 @@ function FindRoomsContent() {
                           <button
                             className="nav-arrow absolute right-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 bg-white rounded-full shadow-md border border-slate-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:border-slate-300"
                             onClick={() => {
-                              const container = document.getElementById(`scroll-${city}`)
-                              if (container) {
-                                container.scrollBy({ left: 180, behavior: "smooth" })
-                              }
+                              const container = document.getElementById(`scroll-${city}`);
+                              container?.scrollBy({
+                                left: container.clientWidth,
+                                behavior: "smooth",
+                              });
                             }}
                             aria-label={`Scroll right for ${city} properties`}
                           >
@@ -1229,9 +1244,9 @@ function FindRoomsContent() {
                           {/* Scroll container */}
                           <div
                             id={`scroll-${city}`}
-                            className="property-scroll-container grid grid-cols-3 md:grid-cols-6 gap-4  px-1"
+                            className="property-scroll-container flex overflow-x-auto scroll-smooth scrollbar-hide gap-4 py-2"
                           >
-                            {cityProperties.slice(0, 6).map((property: any) => {
+                            {cityProperties.map((property: any) => {
                               // Extract image URL properly - handle multiple formats
                               const imageUrl = (() => {
                                 if (Array.isArray(property.images) && property.images.length > 0) {
@@ -1272,8 +1287,7 @@ function FindRoomsContent() {
                               return (
                                 <div
                                   key={property._id}
-                                  className="transition-all duration-300 w-full cursor-pointer hover:z-10 pb-2 hover:shadow-lg hover:border hover:border-emerald-200 rounded-lg"
-                                  style={{}}
+                                  className="transition-all duration-300 w-[calc((100%-2rem)/3)] md:w-[calc((100%-5rem)/6)] flex-shrink-0 cursor-pointer hover:z-10 pb-2 hover:shadow-lg hover:border hover:border-emerald-200 rounded-lg"
                                   onClick={() => router.push(`/property/${property._id}`)}
                                 >
                                   <div className="relative w-full h-28 md:h-32 overflow-hidden bg-slate-100 rounded-lg">
