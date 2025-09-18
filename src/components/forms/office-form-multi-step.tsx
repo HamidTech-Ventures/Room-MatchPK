@@ -665,7 +665,7 @@ export function OfficeFormMultiStep({
               </ul>
             </div>
           </div>
-        </div>
+        </div> 
       )}
 
       {/* Step 5: Owner Details */}

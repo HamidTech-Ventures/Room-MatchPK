@@ -79,12 +79,17 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error uploading images:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to upload images' },
-      { status: 500 }
-    );
-  }
+  console.error("Error uploading images:", error);
+
+  // Send the actual error message back to the client
+  return NextResponse.json(
+    {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    },
+    { status: 500 }
+  );
+}
 }
 
 // GET - Get images for a property

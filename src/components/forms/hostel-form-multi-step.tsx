@@ -1,5 +1,5 @@
 "use client"
-import React from "react"
+import React, { useEffect} from "react"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -118,6 +118,40 @@ export function HostelFormMultiStep({
   editingProperty
 }: HostelFormMultiStepProps) {
 
+  // Mark the relevant fields as touched after a step change
+useEffect(() => {
+  if (currentStep === 1) {
+    setTouched(prev => ({
+      ...prev,
+      propertyName: true,
+      propertyType: true,
+      address: true,
+      city: true,
+      area: true,
+    }));
+  } else if (currentStep === 2) {
+    const fields = propertySubType === 'hostel' 
+      ? ['totalRooms', 'availableRooms', 'pricePerBed', 'genderPreference']
+      : propertySubType === 'house' 
+        ? ['houseSize', 'monthlyRent', 'securityDeposit', 'furnishingStatus']
+        : propertySubType === 'office' 
+          ? ['officeSize', 'monthlyRent', 'securityDeposit', 'furnishingStatus']
+          : ['houseSize', 'monthlyRent', 'securityDeposit', 'furnishingStatus'];
+    setTouched(prev => ({ ...prev, ...Object.fromEntries(fields.map(f => [f, true])) }));
+  } else if (currentStep === 3) {
+    setTouched(prev => ({ ...prev, description: true }));
+  } else if (currentStep === 5) {
+    setTouched(prev => ({
+      ...prev,
+      ownerName: true,
+      ownerEmail: true,
+      ownerPhone: true,
+      cnicNumber: true,
+    }));
+  }
+}, [currentStep, propertySubType, setTouched]);
+
+
   const {
     validateAllFields,
     getFieldError,
@@ -133,106 +167,44 @@ export function HostelFormMultiStep({
     setTouched(prev => ({ ...prev, [field]: true }))
   }
 
+  // returns true if every field in fields[] has no error
+  const checkFieldsValid = (fields: string[]) => {
+    const { errors } = validateAllFields();
+    return fields.every(f => !errors[f]);
+  };
+
+
   // Step validation functions
   const validateStep1 = () => {
-    console.log('=== STEP 1 VALIDATION DEBUG ===')
-    console.log('formData:', formData)
-    console.log('propertySubType:', propertySubType)
-    
-    // Mark all step 1 fields as touched for validation
-    const step1Fields = ['propertyName', 'propertyType', 'address', 'city', 'area']
-    const updatedTouched = { ...touched }
-    step1Fields.forEach(field => {
-      updatedTouched[field] = true
-    })
-    setTouched(updatedTouched)
+  const fields = ['propertyName','propertyType','address','city','area'];
+  return checkFieldsValid(fields);
+};
 
-    // Use the validation system to check step 1 fields
-    const validationResult = validateAllFields()
-    const step1Errors = Object.keys(validationResult.errors).filter(field => 
-      step1Fields.includes(field)
-    )
-    
-    const isValid = step1Errors.length === 0
-    console.log('Step 1 validation errors:', step1Errors)
-    console.log('Step 1 overall valid:', isValid)
-    return isValid
-  }
-
-  const validateStep2 = () => {
-    console.log('=== STEP 2 VALIDATION DEBUG ===')
-    
-    const step2Fields = propertySubType === 'hostel' 
+const validateStep2 = () => {
+  const fields =
+    propertySubType === 'hostel' 
       ? ['totalRooms', 'availableRooms', 'pricePerBed', 'genderPreference']
       : propertySubType === 'house' 
         ? ['houseSize', 'monthlyRent', 'securityDeposit', 'furnishingStatus']
         : propertySubType === 'office' 
           ? ['officeSize', 'monthlyRent', 'securityDeposit', 'furnishingStatus']
-          : ['houseSize', 'monthlyRent', 'securityDeposit', 'furnishingStatus']
-    
-    // Mark all step 2 fields as touched
-    const updatedTouched = { ...touched }
-    step2Fields.forEach(field => {
-      updatedTouched[field] = true
-    })
-    setTouched(updatedTouched)
+          : ['houseSize', 'monthlyRent', 'securityDeposit', 'furnishingStatus'];
+  return checkFieldsValid(fields);
+};
 
-    // Check validation for step 2 fields
-    const validationResult = validateAllFields()
-    const step2Errors = Object.keys(validationResult.errors).filter(field => 
-      step2Fields.includes(field)
-    )
-    
-    const isValid = step2Errors.length === 0
-    console.log('Step 2 validation errors:', step2Errors)
-    console.log('Step 2 overall valid:', isValid)
-    return isValid
-  }
+const validateStep3 = () => checkFieldsValid(['description']);
 
-  const validateStep3 = () => {
-    // Step 3: Description is required
-    const step3Fields = ['description']
-    
-    const updatedTouched = { ...touched }
-    step3Fields.forEach(field => {
-      updatedTouched[field] = true
-    })
-    setTouched(updatedTouched)
+const validateStep4 = () =>
+  Boolean(uploadedImages && uploadedImages.length > 0);
 
-    const validationResult = validateAllFields()
-    const step3Errors = Object.keys(validationResult.errors).filter(field => 
-      step3Fields.includes(field)
-    )
-    
-    return step3Errors.length === 0
-  }
+const validateStep5 = () => {
+  const ownerFields = ['ownerName','ownerEmail','ownerPhone','cnicNumber'];
+  const ownerValid = checkFieldsValid(ownerFields);
+  const docsValid = cnicPicFront && cnicPicBack && ownerPic;
+  const agreementsValid = acceptVerify && acceptTerms && acceptCommission;
+  return ownerValid && docsValid && agreementsValid;
+};
 
-  const validateStep4 = () => {
-    // Images validation - at least one image required
-    return uploadedImages && uploadedImages.length > 0
-  }
-
-  const validateStep5 = () => {
-    // Owner details validation
-    const step5Fields = ['ownerName', 'ownerEmail', 'ownerPhone', 'cnicNumber']
-    
-    const updatedTouched = { ...touched }
-    step5Fields.forEach(field => {
-      updatedTouched[field] = true
-    })
-    setTouched(updatedTouched)
-
-    const validationResult = validateAllFields()
-    const step5Errors = Object.keys(validationResult.errors).filter(field => 
-      step5Fields.includes(field)
-    )
-    
-    const ownerFieldsValid = step5Errors.length === 0
-    const documentsValid = cnicPicFront && cnicPicBack && ownerPic
-    const agreementsValid = acceptVerify && acceptTerms && acceptCommission
-    
-    return ownerFieldsValid && documentsValid && agreementsValid
-  }
 
   const handleNext = () => {
     let isValid = false
@@ -304,6 +276,8 @@ export function HostelFormMultiStep({
       </div>
     </div>
   )
+
+  
 
   // Helper functions
   const addTag = () => {
@@ -714,7 +688,7 @@ export function HostelFormMultiStep({
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   className="flex-1"
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                  onKeyDown={(e) => { if (e.key === 'Enter') addTag() }}
                 />
                 <Button type="button" onClick={addTag} variant="outline">
                   <Plus className="w-4 h-4" />
