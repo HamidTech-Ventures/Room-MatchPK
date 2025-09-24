@@ -251,7 +251,24 @@ export default function PropertyDetailPage() {
                   <div className="flex items-center text-slate-600 mb-4">
                     <MapPin className="w-5 h-5 mr-2" />
                     <span className="text-sm">
-                      {propertyData.address ? `${propertyData.address.area || ''}, ${propertyData.address.city || ''}` : 'Unknown Location'}
+                      {(() => {
+                        // Handle structured address object
+                        if (propertyData.address && typeof propertyData.address === 'object') {
+                          const area = propertyData.address.area || ''
+                          const city = propertyData.address.city || ''
+                          if (area && city) return `${area}, ${city}`
+                          if (city) return city
+                          if (area) return area
+                        }
+                        // Fallback to individual fields
+                        const area = propertyData.area || ''
+                        const city = propertyData.city || ''
+                        if (area && city) return `${area}, ${city}`
+                        if (city) return city
+                        if (area) return area
+                        return 'Unknown Location'
+                      })()
+                      }
                     </span>
                   </div>
                   <div className="flex items-center space-x-1 bg-yellow-50 px-3 py-1 rounded-full w-fit">

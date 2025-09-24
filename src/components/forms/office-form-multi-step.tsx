@@ -30,6 +30,7 @@ import {
   Coffee,
   Printer
 } from "lucide-react"
+import { LocationSelector } from "@/components/ui/location-selector"
 
 interface OfficeFormMultiStepProps {
   formData: any
@@ -116,7 +117,7 @@ export function OfficeFormMultiStep({
 
   // Step validation functions
   const validateStep1 = () => {
-    const requiredFields = ['officeTitle', 'city', 'address', 'area']
+    const requiredFields = ['officeTitle', 'country', 'province', 'city', 'area', 'address', 'mapLink']
     return requiredFields.every(field => formData[field] && formData[field].trim() !== '')
   }
 
@@ -272,51 +273,43 @@ export function OfficeFormMultiStep({
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold text-slate-700">
-                  City <span className="text-red-500">*</span>
-                </Label>
-                <Select value={formData.city} onValueChange={(value) => handleInputChange("city", value)}>
-                  <SelectTrigger className="h-12">
-                    <SelectValue placeholder="Select city" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="lahore">Lahore</SelectItem>
-                    <SelectItem value="karachi">Karachi</SelectItem>
-                    <SelectItem value="islamabad">Islamabad</SelectItem>
-                    <SelectItem value="faisalabad">Faisalabad</SelectItem>
-                    <SelectItem value="multan">Multan</SelectItem>
-                    <SelectItem value="peshawar">Peshawar</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold text-slate-700">
-                  Area/Business District <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  placeholder="e.g., Gulberg, DHA, Commercial Area"
-                  value={formData.area}
-                  onChange={(e) => handleInputChange("area", e.target.value)}
-                  className="h-12"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <Label className="text-sm font-semibold text-slate-700">
-                  Complete Address <span className="text-red-500">*</span>
-                </Label>
-                <Textarea
-                  placeholder="Enter complete office address with building name and landmarks"
-                  value={formData.address}
-                  onChange={(e) => handleInputChange("address", e.target.value)}
-                  rows={3}
-                  className="resize-none"
-                  required
-                />
-              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+            <div className="flex items-center gap-3 mb-6">
+              <MapPin className="w-6 h-6 text-purple-600" />
+              <h3 className="text-lg font-semibold text-slate-800">Location Details</h3>
+            </div>
+            
+            <LocationSelector
+              formData={formData}
+              handleInputChange={handleInputChange}
+              touched={touched}
+              setTouched={setTouched}
+              getFieldClassName={(field, baseClass) => {
+                const invalid = touched[field] && !formData[field]
+                return `${baseClass} ${invalid ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-300 focus:border-purple-500 focus:ring-purple-500'}`
+              }}
+              getFieldError={(field) => {
+                if (!touched[field] || formData[field]) return null
+                return `${field.charAt(0).toUpperCase() + field.slice(1)} is required`
+              }}
+            />
+            
+            <div className="mt-6 space-y-2">
+              <Label className="text-sm font-semibold text-slate-700">
+                Complete Address <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                placeholder="Enter complete office address with building name and landmarks"
+                value={formData.address}
+                onChange={(e) => handleInputChange("address", e.target.value)}
+                rows={3}
+                className="resize-none"
+                required
+              />
+            </div>
             </div>
           </div>
         </div>

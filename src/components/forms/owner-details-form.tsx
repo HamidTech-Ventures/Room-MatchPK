@@ -121,24 +121,6 @@ export function OwnerDetailsForm({
     if (!cnic || cnic.trim().length === 0) {
       return { isValid: false, message: "CNIC number is required" }
     }
-    
-    // Remove all non-digit characters for validation
-    const cleanCNIC = cnic.replace(/\D/g, '')
-    
-    if (cleanCNIC.length !== 13) {
-      return { isValid: false, message: "CNIC must be exactly 13 digits" }
-    }
-    
-    // Check for valid CNIC pattern (basic validation)
-    if (!/^[1-9][0-9]{12}$/.test(cleanCNIC)) {
-      return { isValid: false, message: "Invalid CNIC format" }
-    }
-    
-    // Check for consecutive same digits (likely fake)
-    if (/(\d)\1{6,}/.test(cleanCNIC)) {
-      return { isValid: false, message: "CNIC contains too many repeated digits" }
-    }
-    
     return { isValid: true, message: "Valid CNIC number" }
   }
 

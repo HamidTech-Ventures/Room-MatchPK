@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ClientProviders } from "@/components/client-providers";
 import { ChatToggle } from "@/components/chat-toggle";
@@ -25,7 +25,10 @@ export const metadata: Metadata = {
     shortcut: '/LOGOs.jpg',
   },
   manifest: '/site.webmanifest',
-  themeColor: '#10b981',
+};
+
+export const viewport: Viewport = {
+  themeColor: "#10b981",
 };
 
 export default function RootLayout({
@@ -35,12 +38,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="icon" href="/LOGOs.jpg" type="image/jpeg" sizes="48x48" />
-        <link rel="apple-touch-icon" href="/LOGOs.jpg" type="image/jpeg" sizes="180x180" />
-        <link rel="manifest" href="/site.webmanifest" />
-        <meta name="theme-color" content="#10b981" />
-      </head>
+      <head />
       <body className="antialiased scroll-smooth" suppressHydrationWarning>
         <ClientProviders>
           {children}

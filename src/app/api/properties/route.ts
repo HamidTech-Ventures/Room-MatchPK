@@ -5,6 +5,13 @@ import { ObjectId } from 'mongodb'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
 
+// Helper function to safely parse numbers
+function tryParseNumber(value: any): number | undefined {
+  if (value === undefined || value === null || value === '') return undefined
+  const num = Number(value)
+  return Number.isFinite(num) && num >= 0 ? num : undefined
+}
+
 // GET - Fetch all properties with filters
 export async function GET(request: NextRequest) {
   try {
@@ -212,8 +219,26 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     
-    // Validate required fields
-    const requiredFields = ['title', 'propertyType', 'address', 'pricing']
+    // Validate required fields based on property type
+    const requiredFields = ['title', 'propertyType', 'address']
+    
+    // Add pricing validation based on property type
+    if (body.propertyType === 'hostel-mess') {
+      if (!body.pricePerBed && !body.monthlyCharges) {
+        return NextResponse.json(
+          { success: false, error: 'Monthly charges (pricePerBed) is required for mess properties' },
+          { status: 400 }
+        )
+      }
+    } else {
+      if (!body.monthlyRent && !body.pricePerBed && !body.pricing?.pricePerBed) {
+        return NextResponse.json(
+          { success: false, error: 'Monthly rent or price per bed is required' },
+          { status: 400 }
+        )
+      }
+    }
+    
     for (const field of requiredFields) {
       if (!body[field]) {
         return NextResponse.json(
@@ -244,66 +269,53 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Determine the primary price value from multiple possible incoming fields.
-    // Frontend multi-step forms sometimes send monthlyRent, price, monthlyCharges, or pricing.pricePerBed.
-    const tryParseNumber = (v: any) => {
-      // Treat undefined/null/empty-string/whitespace as missing value (not zero)
-      if (v === undefined || v === null) return undefined
-      if (typeof v === 'string' && v.trim() === '') return undefined
-      const n = Number(v)
-      return Number.isFinite(n) ? n : undefined
+    // Parse price based on frontend form field names
+    const parsePrice = (value: any): number | undefined => {
+      if (value === undefined || value === null || value === '') return undefined
+      const num = Number(value)
+      return Number.isFinite(num) && num > 0 ? num : undefined
     }
 
-    const candidates = [
-      // Prefer explicit pricing object values first
-      body?.pricing?.pricePerBed,
-      body?.pricing?.monthlyPrice,
-      body?.pricing?.price,
-      body?.pricing?.rent,
-      // Then top-level fields used by different forms
-      body?.monthlyCharges,
-      body?.monthlyRent,
-      body?.price,
-      body?.rent,
-    ]
-
-    let resolvedPrice: number | undefined
-    for (const c of candidates) {
-      const p = tryParseNumber(c)
-      if (p !== undefined) { resolvedPrice = p; break }
+    // Get price from frontend form fields
+    let finalPrice: number | undefined
+    if (body.propertyType === 'hostel-mess') {
+      // Mess form uses pricePerBed field for monthly charges
+      finalPrice = parsePrice(body.pricePerBed) || parsePrice(body.monthlyCharges)
+    } else {
+      // Other forms use monthlyRent or pricePerBed
+      finalPrice = parsePrice(body.monthlyRent) || parsePrice(body.pricePerBed) || parsePrice(body.pricing?.pricePerBed)
     }
 
-    // Determine final price and ensure one is provided
-    const monthlyRentCandidate = tryParseNumber(body.monthlyRent ?? body.price ?? body.rent)
-    const monthlyChargesCandidate = tryParseNumber(body.monthlyCharges ?? body.pricing?.monthlyPrice ?? body.pricing?.price)
-    const finalPrice = resolvedPrice ?? monthlyRentCandidate ?? monthlyChargesCandidate
-    if (finalPrice === undefined) {
+    if (!finalPrice) {
       return NextResponse.json(
-        { success: false, error: 'Pricing not provided. Please include pricePerBed or monthlyRent/monthlyCharges.' },
+        { success: false, error: 'Valid pricing is required' },
         { status: 400 }
       )
     }
 
-    // Build property data object - only include fields that have valid values
+    // Build property data matching frontend form structure
     const propertyData: CreateDocument<Property> = {
       title: body.title,
       description: body.description || '',
       ownerId: new ObjectId(session.user.id),
       propertyType: body.propertyType,
+      propertySubType: body.propertySubType,
       genderPreference: body.genderPreference,
       address: body.address,
       pricing: {
-        pricePerBed: finalPrice
+        pricePerBed: finalPrice,
+        securityDeposit: parsePrice(body.securityDeposit) || 0
       },
       amenities: body.amenities || [],
       images: body.images || [],
       roomDetails: body.roomDetails || [],
-      rules: body.rules || [],
+      rules: Array.isArray(body.rules) ? body.rules : (body.rules ? [body.rules] : []),
       contactInfo: body.contactInfo || {},
       tags: body.tags || [],
-      status: 'pending', // Default status for new properties
-      isActive: false, // Not active until approved
-      isVerified: false, // Admin needs to verify
+      nearbyUniversity: body.nearbyUniversity || '',
+      status: 'pending',
+      isActive: false,
+      isVerified: false,
       rating: 0,
       totalReviews: 0,
       cnicPicFront: body.cnicPicFront || '',
@@ -311,18 +323,25 @@ export async function POST(request: NextRequest) {
       ownerPic: body.ownerPic || ''
     }
 
-    // Preserve top-level monthly/rent fields for house/office/apartment/etc. and keep pricing in sync
-    if (monthlyRentCandidate !== undefined) {
-      ;(propertyData as any).monthlyRent = monthlyRentCandidate
-      if (propertyData.pricing && propertyData.pricing.pricePerBed === undefined) {
-        propertyData.pricing.pricePerBed = monthlyRentCandidate
-      }
-    }
-    if (monthlyChargesCandidate !== undefined) {
-      ;(propertyData as any).monthlyCharges = monthlyChargesCandidate
-      if (propertyData.pricing && propertyData.pricing.pricePerBed === undefined) {
-        propertyData.pricing.pricePerBed = monthlyChargesCandidate
-      }
+    // Add frontend form fields directly to database
+    if (body.propertyType === 'hostel-mess') {
+      // Mess-specific fields from frontend
+      propertyData.messName = body.messName || body.propertyName || body.title
+      propertyData.messType = body.messType
+      propertyData.monthlyCharges = finalPrice
+      propertyData.deliveryAvailable = body.deliveryAvailable || false
+      propertyData.deliveryCharges = body.deliveryCharges || ''
+      propertyData.coverageArea = body.coverageArea || ''
+      propertyData.trialAvailable = body.trialAvailable || false
+      propertyData.paymentOptions = body.paymentOptions || { cash: false, jazzcash: false, easypaisa: false }
+      propertyData.timings = body.timings || body.generalTimings || ''
+      propertyData.generalTimings = body.generalTimings || body.timings || ''
+    } else {
+      // Other property types
+      propertyData.monthlyRent = finalPrice
+      if (body.houseSize) propertyData.houseSize = body.houseSize
+      if (body.officeSize) propertyData.officeSize = body.officeSize
+      if (body.furnishingStatus) propertyData.furnishingStatus = body.furnishingStatus
     }
 
     // Add optional pricing fields only if they have values
@@ -396,7 +415,14 @@ export async function POST(request: NextRequest) {
       propertyData.availableRooms = availableRooms
     }
 
-    console.log('Property data being inserted:', JSON.stringify(propertyData, null, 2))
+    // Sanitized logging
+    const logData = { 
+      ...propertyData, 
+      cnicPicFront: propertyData.cnicPicFront ? '[REDACTED]' : '',
+      cnicPicBack: propertyData.cnicPicBack ? '[REDACTED]' : '',
+      ownerPic: propertyData.ownerPic ? '[REDACTED]' : ''
+    }
+    console.log('Property data being inserted:', JSON.stringify(logData, null, 2))
     
     // Temporarily bypass validation to allow property creation
     const result = await collection.insertOne(propertyData, { bypassDocumentValidation: true })

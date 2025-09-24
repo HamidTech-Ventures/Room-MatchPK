@@ -9,37 +9,67 @@ import { Footer } from "@/components/footer"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 // Simple Google Map embed component
-function PropertyMap({ address }: { address: any }) {
-  // Renders a map for the given address.
-  // Primary method: Google Maps Embed API (requires API key).
-  // Fallback: public maps.google.com search iframe which doesn't require an API key.
-  if (!address) return null;
-  const searchQuery = `${address.street || ''} ${address.area || ''} ${address.city || ''} Pakistan`.trim();
-  const encodedQuery = encodeURIComponent(searchQuery);
+function PropertyMap({ address, mapLink }: { address: any; mapLink?: string }) {
+  // Renders a map for the given address or map link.
+  // Primary method: Use provided map link if available
+  // Fallback: Google Maps search iframe which doesn't require an API key.
+  
+  let src = '';
+  
+  if (mapLink) {
+    // If a map link is provided, try to convert it to an embeddable format
+    if (mapLink.includes('google.com/maps')) {
+      // Convert Google Maps share link to embed format
+      if (mapLink.includes('/place/') || mapLink.includes('/@')) {
+        // Extract coordinates or place info and create embed URL
+        const embedUrl = mapLink.replace('/maps/', '/maps/embed?pb=').replace('?', '&')
+        src = embedUrl
+      } else {
+        // Fallback: add output=embed to regular Google Maps URLs
+        src = mapLink.includes('output=embed') ? mapLink : `${mapLink}&output=embed`
+      }
+    } else {
+      // For non-Google Maps links, try to embed directly
+      src = mapLink
+    }
+  } else if (address) {
+    // Fallback to address-based search
+    const searchQuery = `${address.street || ''} ${address.area || ''} ${address.city || ''} Pakistan`.trim();
+    const encodedQuery = encodeURIComponent(searchQuery);
+    src = `https://www.google.com/maps?q=${encodedQuery}&output=embed`;
+  }
+  
+  if (!src) return null;
 
-  // Replace this with your Google Maps Embed API key if you have one.
-  const GMAP_EMBED_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY || 'YOUR_GOOGLE_MAPS_EMBED_API_KEY';
-
-  // URL that uses the Maps Embed API (may return 403 if key is invalid or restricted)
-  const embedApiUrl = `https://www.google.com/maps/embed/v1/place?key=${GMAP_EMBED_KEY}&q=${encodedQuery}`;
-
-  // Fallback URL uses a public maps.google.com search URL embedded in an iframe.
-  // This often works without an API key but offers less customization.
-  const fallbackUrl = `https://www.google.com/maps?q=${encodedQuery}&output=embed`;
-
-  // If developer hasn't provided a real API key, use the fallback to avoid the 403 error.
-  const useFallback = !GMAP_EMBED_KEY || GMAP_EMBED_KEY === 'YOUR_GOOGLE_MAPS_EMBED_API_KEY';
-
-  const src = useFallback ? fallbackUrl : embedApiUrl;
+  const handleMapClick = () => {
+    console.log('Map clicked! mapLink:', mapLink, 'address:', address)
+    // Open map in new tab when clicked - check both mapLink prop and address.mapLink
+    const actualMapLink = mapLink || (address && address.mapLink)
+    if (actualMapLink) {
+      console.log('Opening mapLink:', actualMapLink)
+      window.open(actualMapLink, "_blank")
+    } else if (address) {
+      const searchQuery = `${address.street || ''} ${address.area || ''} ${address.city || ''} Pakistan`
+      const encodedQuery = encodeURIComponent(searchQuery.trim())
+      const url = `https://www.google.com/maps/search/${encodedQuery}`
+      console.log('Opening search URL:', url)
+      window.open(url, "_blank")
+    }
+  }
 
   return (
-    <div className="w-full rounded-xl overflow-hidden border border-slate-200" style={{ height: '400px' }}>
+    <div 
+      className="w-full rounded-xl overflow-hidden border border-slate-200 cursor-pointer hover:shadow-lg transition-shadow" 
+      style={{ height: '400px' }}
+      onClick={handleMapClick}
+      title="Click to open in Google Maps"
+    >
       <iframe
         title="Property Location Map"
         src={src}
         width="100%"
         height="100%"
-        style={{ border: 0 }}
+        style={{ border: 0, pointerEvents: 'none' }}
         allowFullScreen
         loading="lazy"
         referrerPolicy="no-referrer-when-downgrade"
@@ -182,13 +212,31 @@ export default function PropertyDetailPage() {
   }
 
   const openInMaps = () => {
-    // Create a search query from the property address
+    console.log('=== OPEN IN MAPS DEBUG ===')
+    console.log('Full propertyData:', propertyData)
+    console.log('propertyData.mapLink:', propertyData?.mapLink)
+    console.log('propertyData.address:', propertyData?.address)
+    console.log('propertyData.address.mapLink:', propertyData?.address?.mapLink)
+    
+    // First try to use the stored map link if available
+    const mapLink = propertyData?.mapLink || propertyData?.address?.mapLink
+    if (mapLink) {
+      console.log('Opening mapLink:', mapLink)
+      window.open(mapLink, "_blank")
+      return
+    }
+    
+    // Fallback: Create a search query from the property address
     const address = propertyData?.address
-    if (!address) return
+    if (!address) {
+      console.log('No address available')
+      return
+    }
     
     const searchQuery = `${address.street || ''} ${address.area || ''} ${address.city || ''} Pakistan`
     const encodedQuery = encodeURIComponent(searchQuery.trim())
     const url = `https://www.google.com/maps/search/${encodedQuery}`
+    console.log('Opening search URL:', url)
     window.open(url, "_blank")
   }
 
@@ -1228,7 +1276,20 @@ Thank you!`
 
               {/* Map below reviews - full width of the main content column */}
               <div className="mb-10">
-                <PropertyMap address={propertyData.address} />
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-slate-900">Location</h2>
+                  {(propertyData?.mapLink || propertyData?.address) && (
+                    <Button
+                      variant="outline"
+                      onClick={openInMaps}
+                      className="flex items-center gap-2 text-emerald-600 border-emerald-600 hover:bg-emerald-50"
+                    >
+                      <Navigation className="w-4 h-4" />
+                      Open in Maps
+                    </Button>
+                  )}
+                </div>
+                <PropertyMap address={propertyData.address} mapLink={propertyData.mapLink} />
               </div>
             </div>
 

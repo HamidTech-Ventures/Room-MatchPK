@@ -103,8 +103,12 @@ function ListPropertyContent() {
 
     // Location
     address: "",
+    country: "",
+    province: "",
     city: "",
     area: "",
+    mapLink: "",
+    postalCode: "",
     nearbyUniversity: "",
 
     // Description
@@ -250,8 +254,11 @@ function ListPropertyContent() {
       case 2:
         switch (field) {
           case 'address': return !formData.address || formData.address.length < 5
+          case 'country': return !formData.country
+          case 'province': return !formData.province
           case 'city': return !formData.city
           case 'area': return !formData.area || formData.area.length < 2
+          case 'mapLink': return !formData.mapLink
           case 'description': return !formData.description || formData.description.length < 10
           default: return false
         }
@@ -494,9 +501,13 @@ function ListPropertyContent() {
       availableRooms: property.availableRooms?.toString() || '',
       pricePerBed: property.pricing?.pricePerBed?.toString() || '',
       securityDeposit: property.pricing?.securityDeposit?.toString() || '',
-      address: property.address?.street || '',
-      city: property.address?.city || '',
-      area: property.address?.area || '',
+      address: property.address?.street || property.address || '',
+      country: property.address?.country || property.country || '',
+      province: property.address?.province || property.province || property.address?.state || '',
+      city: property.address?.city || property.city || '',
+      area: property.address?.area || property.area || '',
+      mapLink: property.mapLink || property.address?.mapLink || '',
+      postalCode: property.postalCode || property.address?.postalCode || '',
       nearbyUniversity: property.nearbyUniversity || '',
       description: property.description || '',
       rules: property.rules?.[0] || '',
@@ -739,59 +750,78 @@ function ListPropertyContent() {
         }
       }
 
-      // Prepare property data
-      console.log('=== PREPARING PROPERTY DATA ===')
+      // Prepare property data matching frontend form structure
       const propertyData = {
         title: formData.propertyName,
         description: formData.description,
-        propertyType: propertySubType, // Main property type (hostel, apartment, house, office)
-        propertySubType: formData.propertyType, // Category/subcategory (studio, boys, etc.)
+        propertyType: currentFormType === "mess" ? 'hostel-mess' : propertySubType,
+        propertySubType: formData.propertyType,
         genderPreference: formData.genderPreference,
+        
+        // Send address as structured object to match display expectations
         address: {
           street: formData.address,
           area: formData.area,
           city: formData.city,
-          state: 'Pakistan', // Default for now
-          country: 'Pakistan'
+          province: formData.province,
+          country: formData.country,
+          postalCode: formData.postalCode,
+          mapLink: formData.mapLink
         },
-        pricing: {
-          // Mess form uses pricePerBed as the controlled field for monthly charges.
-          pricePerBed: formData.pricePerBed ? parseInt(formData.pricePerBed) : undefined,
-          securityDeposit: formData.securityDeposit ? parseInt(formData.securityDeposit) : 0
-        },
-    // Include monthlyRent at top-level for office/house/apartment submissions so server can
-    // use it as a fallback when pricing.pricePerBed isn't provided by the form
-    ...(formData.monthlyRent ? { monthlyRent: parseInt(formData.monthlyRent) } : {}),
-        totalRooms: parseInt(formData.totalRooms),
-        availableRooms: parseInt(formData.availableRooms),
-        amenities: formData.amenities,
+        // Also send individual fields for backward compatibility
+        country: formData.country,
+        province: formData.province,
+        city: formData.city,
+        area: formData.area,
+        mapLink: formData.mapLink,
+        postalCode: formData.postalCode,
+        
+        // Pricing - use pricePerBed for all types as main price field
+        pricePerBed: formData.pricePerBed ? parseInt(formData.pricePerBed) : undefined,
+        monthlyRent: formData.monthlyRent ? parseInt(formData.monthlyRent) : undefined,
+        securityDeposit: formData.securityDeposit ? parseInt(formData.securityDeposit) : undefined,
+        
+        totalRooms: formData.totalRooms ? parseInt(formData.totalRooms) : undefined,
+        availableRooms: formData.availableRooms ? parseInt(formData.availableRooms) : undefined,
+        
+        amenities: formData.amenities || [],
         images: uploadedImages.map(url => ({
           url,
-          publicId: '', // Will be extracted from URL if needed
+          publicId: '',
           isActive: true,
           uploadedAt: new Date()
         })),
-        rules: formData.rules ? [formData.rules] : [],
-        tags: formData.tags,
+        rules: formData.rules,
+        tags: formData.tags || [],
+        nearbyUniversity: formData.nearbyUniversity,
+        
+        // Owner details
         contactInfo: {
           name: formData.ownerName,
           phone: formData.ownerPhone,
           email: formData.ownerEmail
         },
-        nearbyUniversity: formData.nearbyUniversity,
-        ...(formData.propertyType === 'hostel-mess' ? {
+        ownerName: formData.ownerName,
+        ownerEmail: formData.ownerEmail,
+        ownerPhone: formData.ownerPhone,
+        cnicNumber: formData.cnicNumber,
+        cnicPicFront: cnicPicFront,
+        cnicPicBack: cnicPicBack,
+        ownerPic: ownerPic,
+        
+        // Property-specific fields
+        ...(currentFormType === "mess" ? {
           messName: formData.messName || formData.propertyName,
           messType: formData.messType,
-          // Only send monthlyCharges if user provided a value (avoid empty string -> 0)
-          ...(formData.monthlyCharges && formData.monthlyCharges.trim() !== '' ? { monthlyCharges: parseInt(formData.monthlyCharges) } : {}),
+          monthlyCharges: formData.monthlyCharges ? parseInt(formData.monthlyCharges) : undefined,
           deliveryAvailable: formData.deliveryAvailable,
           deliveryCharges: formData.deliveryCharges,
           coverageArea: formData.coverageArea,
           sampleMenu: formData.sampleMenu,
           hygieneCertification: formData.hygieneCertification,
           timings: formData.timings,
-          trialAvailable: formData.trialAvailable,
           generalTimings: formData.generalTimings,
+          trialAvailable: formData.trialAvailable,
           paymentOptions: formData.paymentOptions,
           foodService: formData.foodService,
           foodTimings: formData.foodTimings,
@@ -802,14 +832,36 @@ function ListPropertyContent() {
           foodCapacity: formData.foodCapacity,
           foodMenuRotation: formData.foodMenuRotation,
           foodSpecialRequirements: formData.foodSpecialRequirements,
-        } : {}),
-        cnicPicFront: cnicPicFront,
-        cnicPicBack: cnicPicBack,
-        ownerPic: ownerPic,
+          mealsOffered: formData.mealsOffered
+        } : {
+          houseSize: formData.houseSize,
+          officeSize: formData.officeSize,
+          furnishingStatus: formData.furnishingStatus,
+          bathrooms: formData.bathrooms,
+          furnished: formData.furnished,
+          advanceSecurity: formData.advanceSecurity,
+          preferredTenant: formData.preferredTenant,
+          parking: formData.parking,
+          floorLevel: formData.floorLevel,
+          availableFrom: formData.availableFrom,
+          workingHours: formData.workingHours,
+          meetingRoom: formData.meetingRoom,
+          internet: formData.internet,
+          powerBackup: formData.powerBackup,
+          security: formData.security,
+          airConditioning: formData.airConditioning,
+          washroom: formData.washroom
+        })
       }
 
-      console.log('=== SENDING API REQUEST ===')
-      console.log('Property data to send:', propertyData)
+      // Sanitized logging
+      const logData = { 
+        ...propertyData, 
+        cnicPicFront: propertyData.cnicPicFront ? '[REDACTED]' : '',
+        cnicPicBack: propertyData.cnicPicBack ? '[REDACTED]' : '',
+        ownerPic: propertyData.ownerPic ? '[REDACTED]' : ''
+      }
+      console.log('Property data to send:', logData)
       
       let response
       if (editingProperty && editingProperty._id) {
@@ -1588,9 +1640,23 @@ function ListPropertyContent() {
                 if (isApiProperty) {
                   const apiProp = property as any
                   name = apiProp.title || 'Unnamed Property'
-                  location = (apiProp.address && typeof apiProp.address === 'object' && apiProp.address !== null && typeof apiProp.address.area === 'string' && typeof apiProp.address.city === 'string')
-                    ? `${apiProp.address.area}, ${apiProp.address.city}`
-                    : 'Unknown Location'
+                  location = (() => {
+                    // Handle structured address object
+                    if (apiProp.address && typeof apiProp.address === 'object') {
+                      const area = apiProp.address.area || ''
+                      const city = apiProp.address.city || ''
+                      if (area && city) return `${area}, ${city}`
+                      if (city) return city
+                      if (area) return area
+                    }
+                    // Fallback to individual fields
+                    const area = apiProp.area || ''
+                    const city = apiProp.city || ''
+                    if (area && city) return `${area}, ${city}`
+                    if (city) return city
+                    if (area) return area
+                    return 'Unknown Location'
+                  })()
 
                   price = (apiProp.pricing && typeof apiProp.pricing === 'object' && apiProp.pricing !== null && typeof apiProp.pricing.pricePerBed === 'number')
                     ? apiProp.pricing.pricePerBed

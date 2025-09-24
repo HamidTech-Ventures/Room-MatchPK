@@ -33,16 +33,9 @@ export interface Property {
   description?: string
   ownerId: string | ObjectId
   propertyType: 'hostel' | 'apartment' | 'office' | 'pg' | 'flat' | 'house' | 'hostel-mess'
-  propertySubType?: 'boys' | 'girls' | 'co-living' | 'family' | 'bachelor' | 'couple' | 'coworking' | 'private' | 'shared' | 'studio' | '1-bedroom' | '2-bedroom' | '3-bedroom'
+  propertySubType?: string
   genderPreference?: 'boys' | 'girls' | 'mixed'
-  address: {
-    street: string
-    area?: string
-    city: string
-    state: string
-    country: string
-    zipCode?: string
-  }
+  address: any // Flexible address structure from frontend
   location?: {
     type: 'Point'
     coordinates: [number, number] // [longitude, latitude]
@@ -54,6 +47,21 @@ export interface Property {
     electricityCharges?: string
     waterCharges?: string
   }
+  
+  // Frontend form fields
+  propertyName?: string
+  country?: string
+  province?: string
+  city?: string
+  area?: string
+  mapLink?: string
+  postalCode?: string
+  
+  // House/Office specific fields
+  houseSize?: string
+  officeSize?: string
+  furnishingStatus?: string
+  monthlyRent?: number
   amenities?: string[]
   images?: Array<{
     url: string
@@ -76,6 +84,7 @@ export interface Property {
     phone?: string
     email?: string
     whatsapp?: string
+    name?: string
   }
   nearbyUniversity?: string
   // Food Service Details
@@ -106,6 +115,23 @@ export interface Property {
   foodCapacity?: string
   foodMenuRotation?: boolean
   foodSpecialRequirements?: string
+  
+  // Additional frontend fields
+  mealsOffered?: string[]
+  workingHours?: string
+  meetingRoom?: boolean
+  internet?: boolean
+  powerBackup?: boolean
+  security?: boolean
+  airConditioning?: boolean
+  washroom?: string
+  bathrooms?: string
+  furnished?: string
+  advanceSecurity?: string
+  preferredTenant?: string
+  parking?: string
+  floorLevel?: string
+  availableFrom?: string
   status?: 'pending' | 'approved' | 'rejected'
   isActive?: boolean
   isVerified?: boolean
@@ -116,10 +142,18 @@ export interface Property {
   cnicPicFront?: string
   cnicPicBack?: string
   ownerPic?: string
+  
+  // Owner details from forms
+  ownerName?: string
+  ownerEmail?: string
+  ownerPhone?: string
+  cnicNumber?: string
   // Mess specific fields
   messName?: string
   messType?: string
+  monthlyCharges?: number
   generalTimings?: string
+  timings?: string
   deliveryAvailable?: boolean
   deliveryCharges?: string
   coverageArea?: string
@@ -129,6 +163,8 @@ export interface Property {
     jazzcash: boolean
     easypaisa: boolean
   }
+  sampleMenu?: string
+  hygieneCertification?: string
 }
 
 // Booking interfaces

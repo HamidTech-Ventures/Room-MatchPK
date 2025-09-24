@@ -373,6 +373,12 @@ export const validationSchemas = {
       minLength: 5,
       maxLength: 200
     },
+    country: {
+      required: true
+    },
+    province: {
+      required: true
+    },
     city: {
       required: true,
       minLength: 2,
@@ -382,6 +388,10 @@ export const validationSchemas = {
       required: true,
       minLength: 2,
       maxLength: 100
+    },
+    mapLink: {
+      required: true,
+      url: true
     },
     description: {
       required: true,
@@ -404,7 +414,6 @@ export const validationSchemas = {
     },
     cnicNumber: {
       required: true,
-      pattern: /^\d{13}$/,
       customValidator: (value: string) => {
         const cleanCnic = value?.replace(/[-\s]/g, '') || ""
         if (cleanCnic.length !== 13) {

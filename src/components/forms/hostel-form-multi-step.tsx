@@ -30,6 +30,7 @@ import {
   ArrowLeft,
   CheckCircle
 } from "lucide-react"
+import { LocationSelector } from "@/components/ui/location-selector"
 
 interface HostelFormMultiStepProps {
   formData: any
@@ -176,7 +177,7 @@ useEffect(() => {
 
   // Step validation functions
   const validateStep1 = () => {
-  const fields = ['propertyName','propertyType','address','city','area'];
+  const fields = ['propertyName','propertyType','address','country','province','city','area'];
   return checkFieldsValid(fields);
 };
 
@@ -202,6 +203,15 @@ const validateStep5 = () => {
   const ownerValid = checkFieldsValid(ownerFields);
   const docsValid = cnicPicFront && cnicPicBack && ownerPic;
   const agreementsValid = acceptVerify && acceptTerms && acceptCommission;
+  
+  // Debug logging
+  console.log('Hostel Step 5 validation:', {
+    ownerValid,
+    docsValid: { cnicPicFront: !!cnicPicFront, cnicPicBack: !!cnicPicBack, ownerPic: !!ownerPic },
+    agreementsValid: { acceptVerify, acceptTerms, acceptCommission },
+    formFields: ownerFields.map(field => ({ [field]: !!formData[field] }))
+  });
+  
   return ownerValid && docsValid && agreementsValid;
 };
 
@@ -438,65 +448,34 @@ const validateStep5 = () => {
               <h3 className="text-lg font-semibold text-slate-800">Location Details</h3>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2 md:col-span-2">
-                <Label className="text-sm font-semibold text-slate-700">
-                  Complete Address <span className="text-red-500">*</span>
-                </Label>
-                <Textarea
-                  placeholder="Enter complete address with landmarks"
-                  value={formData.address}
-                  onChange={(e) => handleInputChange("address", e.target.value)}
-                  rows={3}
-                  className="resize-none"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold text-slate-700">
-                  City <span className="text-red-500">*</span>
-                </Label>
-                <Select value={formData.city} onValueChange={(value) => handleFieldChange("city", value)}>
-                  <SelectTrigger className={getFieldClassName("city", "h-12")}>
-                    <SelectValue placeholder="Select city" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="lahore">Lahore</SelectItem>
-                    <SelectItem value="karachi">Karachi</SelectItem>
-                    <SelectItem value="islamabad">Islamabad</SelectItem>
-                    <SelectItem value="faisalabad">Faisalabad</SelectItem>
-                    <SelectItem value="multan">Multan</SelectItem>
-                    <SelectItem value="peshawar">Peshawar</SelectItem>
-                  </SelectContent>
-                </Select>
-                {getFieldError('city') && (
-                  <p className="text-red-500 text-sm flex items-center gap-1">
-                    <span className="text-red-500">●</span>
-                    {getFieldError('city')}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold text-slate-700">
-                  Area/Locality <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  placeholder="e.g., Gulberg, DHA, Johar Town"
-                  value={formData.area}
-                  onChange={(e) => handleFieldChange("area", e.target.value)}
-                  onBlur={() => handleFieldBlur("area")}
-                  className={getFieldClassName("area", "h-12")}
-                  required
-                />
-                {getFieldError('area') && (
-                  <p className="text-red-500 text-sm flex items-center gap-1">
-                    <span className="text-red-500">●</span>
-                    {getFieldError('area')}
-                  </p>
-                )}
-              </div>
+            <LocationSelector
+              formData={formData}
+              handleInputChange={handleInputChange}
+              touched={touched}
+              setTouched={setTouched}
+              getFieldClassName={getFieldClassName}
+              getFieldError={getFieldError}
+            />
+            
+            <div className="mt-6 space-y-2">
+              <Label className="text-sm font-semibold text-slate-700">
+                Complete Address <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                placeholder="Enter complete address with landmarks"
+                value={formData.address}
+                onChange={(e) => handleInputChange("address", e.target.value)}
+                onBlur={() => handleFieldBlur("address")}
+                rows={3}
+                className={getFieldClassName("address", "resize-none")}
+                required
+              />
+              {getFieldError('address') && (
+                <p className="text-red-500 text-sm flex items-center gap-1">
+                  <span className="text-red-500">●</span>
+                  {getFieldError('address')}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -789,7 +768,7 @@ const validateStep5 = () => {
           variant="outline"
           onClick={handlePrev}
           disabled={currentStep === 1}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ArrowLeft className="w-4 h-4" />
           Previous
@@ -805,30 +784,49 @@ const validateStep5 = () => {
               (currentStep === 3 && !validateStep3()) ||
               (currentStep === 4 && !validateStep4())
             }
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next
             <ArrowRight className="w-4 h-4" />
           </Button>
         ) : (
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={!validateStep5() || isSubmitting}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-          >
-            {isSubmitting ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Submitting...
-              </>
-            ) : (
-              <>
-                Submit Property
-                <CheckCircle className="w-4 h-4" />
-              </>
+          <div className="space-y-2">
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!validateStep5() || isSubmitting}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  Submit Property
+                  <CheckCircle className="w-4 h-4" />
+                </>
+              )}
+            </Button>
+            {!validateStep5() && (
+              <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600 font-medium mb-2">Please complete the following:</p>
+                <ul className="text-xs text-red-600 space-y-1">
+                  {!checkFieldsValid(['ownerName']) && <li>• Valid owner name</li>}
+                  {!checkFieldsValid(['ownerEmail']) && <li>• Valid email address</li>}
+                  {!checkFieldsValid(['ownerPhone']) && <li>• Valid phone number</li>}
+                  {!checkFieldsValid(['cnicNumber']) && <li>• Valid CNIC number</li>}
+                  {!cnicPicFront && <li>• Upload CNIC front side</li>}
+                  {!cnicPicBack && <li>• Upload CNIC back side</li>}
+                  {!ownerPic && <li>• Upload owner photo</li>}
+                  {!acceptVerify && <li>• Accept identity verification agreement</li>}
+                  {!acceptTerms && <li>• Accept terms of service</li>}
+                  {!acceptCommission && <li>• Accept commission structure</li>}
+                </ul>
+              </div>
             )}
-          </Button>
+          </div>
         )}
       </div>
     </div>

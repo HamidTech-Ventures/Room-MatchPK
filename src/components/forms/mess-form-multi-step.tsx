@@ -31,6 +31,7 @@ import {
   ArrowLeft,
   CheckCircle
 } from "lucide-react"
+import { LocationSelector } from "@/components/ui/location-selector"
 
 interface MessFormProps {
   formData: any
@@ -137,19 +138,7 @@ export function MessFormMultiStep({
     setTouched(prev => ({ ...prev, [field]: true }))
   }
   
-  // Debug logging
-  React.useEffect(() => {
-    console.log('=== MESS FORM DATA ===')
-    console.log('messType:', formData.messType)
-    console.log('timings:', formData.timings)
-    console.log('propertyName:', formData.propertyName)
-    console.log('Full formData:', formData)
-  }, [formData.messType, formData.timings, formData.propertyName])
 
-  // Force re-render when messType changes to ensure Select updates
-  React.useEffect(() => {
-    console.log('MessType changed to:', formData.messType)
-  }, [formData.messType])
 
   const getFieldClass = (field: string, baseClass = "", minLength = 0) => {
     const value = formData[field]
@@ -163,6 +152,42 @@ export function MessFormMultiStep({
     if (minLength > 0 && value.length < minLength) return false
     if (minValue > 0 && Number(value) < minValue) return false
     return true
+  }
+
+  // Enhanced validation functions for owner details
+  const validateName = (name: string) => {
+    if (!name || name.trim().length === 0) return { isValid: false, message: "Name is required" }
+    if (name.trim().length < 2) return { isValid: false, message: "Name must be at least 2 characters" }
+    if (name.trim().length > 50) return { isValid: false, message: "Name must be less than 50 characters" }
+    if (!/^[a-zA-Z\s'.,-]*$/.test(name)) return { isValid: false, message: "Invalid characters in name" }
+    return { isValid: true, message: "Valid name" }
+  }
+
+  const validateEmail = (email: string) => {
+    if (!email || email.trim().length === 0) return { isValid: false, message: "Email is required" }
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+    if (!emailPattern.test(email)) return { isValid: false, message: "Invalid email format" }
+    if (email.length > 254) return { isValid: false, message: "Email too long" }
+    return { isValid: true, message: "Valid email" }
+  }
+
+  const validatePhone = (phone: string) => {
+    if (!phone || phone.trim().length === 0) return { isValid: false, message: "Phone is required" }
+    const cleanPhone = phone.replace(/\D/g, '')
+    if (cleanPhone.length < 10 || cleanPhone.length > 15) return { isValid: false, message: "Invalid phone length" }
+    const pakistaniPatterns = [
+      /^(\+92|92|0)?3[0-9]{9}$/, // Mobile numbers
+      /^(\+92|92|0)?[2-9][0-9]{7,10}$/, // Landline numbers
+    ]
+    if (!pakistaniPatterns.some(pattern => pattern.test(cleanPhone))) {
+      return { isValid: false, message: "Invalid Pakistani phone number" }
+    }
+    return { isValid: true, message: "Valid phone" }
+  }
+
+  const validateCNIC = (cnic: string) => {
+    if (!cnic || cnic.trim().length === 0) return { isValid: false, message: "CNIC is required" }
+    return { isValid: true, message: "Valid CNIC" }
   }
 
   const getValidationMessage = (field: string, minLength = 0, minValue = 0, fieldName = "") => {
@@ -190,10 +215,10 @@ export function MessFormMultiStep({
 
   // Step validation functions
   const validateStep1 = () => {
-    const requiredFields = ['propertyName', 'messType', 'genderPreference', 'pricePerBed', 'totalRooms', 'availableRooms', 'city', 'area', 'address']
+    const requiredFields = ['propertyName', 'messType', 'genderPreference', 'pricePerBed', 'totalRooms', 'availableRooms', 'country', 'province', 'city', 'area', 'address']
     return requiredFields.every(field => {
       const value = formData[field]
-      if (!value) return false
+      if (!value || (typeof value === 'string' && value.trim() === '')) return false
       if (field === 'propertyName' && value.length < 3) return false
       if (field === 'address' && value.length < 5) return false
       if (field === 'area' && value.length < 2) return false
@@ -225,15 +250,24 @@ export function MessFormMultiStep({
 
   const validateStep5 = () => {
     // Step 5 validation - owner details and acceptance checkboxes
-    const requiredFields = ['ownerName', 'ownerEmail', 'ownerPhone', 'cnicNumber']
-    const fieldsValid = requiredFields.every(field => {
-      const value = formData[field]
-      return value && value.toString().trim().length > 0
-    })
+    const nameValid = !formData.ownerName || validateName(formData.ownerName || '').isValid
+    const emailValid = !formData.ownerEmail || validateEmail(formData.ownerEmail || '').isValid
+    const phoneValid = !formData.ownerPhone || validatePhone(formData.ownerPhone || '').isValid
+    const cnicValid = true // Always valid - no CNIC validation
+    
+    const fieldsValid = nameValid && emailValid && phoneValid && cnicValid
     
     // Check if all acceptance checkboxes are checked and images are uploaded
     const acceptanceValid = acceptVerify && acceptTerms && acceptCommission
     const documentsValid = cnicPicFront && cnicPicBack && ownerPic
+    
+    // Debug logging
+    console.log('Step 5 validation:', {
+      fieldsValid: { nameValid, emailValid, phoneValid, cnicValid },
+      acceptanceValid: { acceptVerify, acceptTerms, acceptCommission },
+      documentsValid: { cnicPicFront: !!cnicPicFront, cnicPicBack: !!cnicPicBack, ownerPic: !!ownerPic },
+      cnicValue: formData.cnicNumber
+    })
     
     return fieldsValid && acceptanceValid && documentsValid
   }
@@ -484,58 +518,21 @@ export function MessFormMultiStep({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">
-                    City <span className="text-red-500">*</span>
-                  </Label>
-                  <Select
-                    value={formData.city || ''}
-                    onValueChange={(value) => {
-                      handleInputChange("city", value)
-                      setTouched(prev => ({ ...prev, city: true }))
-                    }}
-                  >
-                    <SelectTrigger className={`h-12 ${touched.city && !formData.city ? 'border-red-500 focus:border-red-500' : 'border-slate-300'}`}>
-                      <SelectValue placeholder="Select city" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="lahore">Lahore</SelectItem>
-                      <SelectItem value="karachi">Karachi</SelectItem>
-                      <SelectItem value="islamabad">Islamabad</SelectItem>
-                      <SelectItem value="multan">Multan</SelectItem>
-                      <SelectItem value="faisalabad">Faisalabad</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <div className="text-xs">
-                    <span className={`${formData.city ? 'text-green-600' : 'text-red-500'}`}>
-                      {touched.city ? (formData.city ? '✓ City selected' : 'Please select city') : 'Required field'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">
-                    Area/Locality <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    placeholder="e.g., Gulberg, DHA, Johar Town"
-                    value={formData.area || ''}
-                    onChange={(e) => handleInputChange("area", e.target.value)}
-                    className={getFieldClass("area", "h-12", 2)}
-                    onBlur={() => setTouched(prev => ({ ...prev, area: true }))}
-                  />
-                  <div className="flex items-center justify-between text-xs">
-                    <span className={`${isFieldValid('area', 2) ? 'text-green-600' : 'text-red-500'}`}>
-                      {formData.area ? `${formData.area.length}/2 characters` : '0/2 characters'}
-                    </span>
-                    <span className={`${isFieldValid('area', 2) ? 'text-green-600' : 'text-red-500'}`}>
-                      {touched.area ? getValidationMessage('area', 2, 0, 'Area') : 'Minimum 2 characters required'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
+              <LocationSelector
+                formData={formData}
+                handleInputChange={handleInputChange}
+                touched={touched}
+                setTouched={setTouched}
+                getFieldClassName={(field, baseClass) => {
+                  const invalid = touched[field] && !formData[field]
+                  return `${baseClass} ${invalid ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-300 focus:border-emerald-500 focus:ring-emerald-500'}`
+                }}
+                getFieldError={(field) => {
+                  if (!touched[field] || formData[field]) return null
+                  return `${field.charAt(0).toUpperCase() + field.slice(1)} is required`
+                }}
+              />
+              
               <div className="space-y-2">
                 <Label className="text-sm font-semibold text-slate-700">
                   Full Address <span className="text-red-500">*</span>
@@ -1421,6 +1418,22 @@ export function MessFormMultiStep({
                 </>
               )}
             </Button>
+            {!isStepValid(5) && (
+              <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600 font-medium mb-2">Please complete the following:</p>
+                <ul className="text-xs text-red-600 space-y-1">
+                  {formData.ownerName && !validateName(formData.ownerName || '').isValid && <li>• Valid owner name (2-50 characters)</li>}
+                  {formData.ownerEmail && !validateEmail(formData.ownerEmail || '').isValid && <li>• Valid email address</li>}
+                  {formData.ownerPhone && !validatePhone(formData.ownerPhone || '').isValid && <li>• Valid Pakistani phone number</li>}
+                  {!cnicPicFront && <li>• Upload CNIC front side</li>}
+                  {!cnicPicBack && <li>• Upload CNIC back side</li>}
+                  {!ownerPic && <li>• Upload owner photo</li>}
+                  {!acceptVerify && <li>• Accept identity verification agreement</li>}
+                  {!acceptTerms && <li>• Accept terms of service</li>}
+                  {!acceptCommission && <li>• Accept commission structure</li>}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       )}

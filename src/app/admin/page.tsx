@@ -941,9 +941,24 @@ function AdminDashboardContent() {
                       ) : properties.map((property: any) => {
                         const name = property.title || property.name || "Unnamed Property"
                         const owner = property.ownerName || property.owner || (property.ownerId ? property.ownerId : "Unknown Owner")
-                        const location = property.address && property.address.area && property.address.city
-                          ? `${property.address.area}, ${property.address.city}`
-                          : property.location || "Unknown Location"
+                        const location = (() => {
+                          // Handle structured address object
+                          if (property.address && typeof property.address === 'object') {
+                            const area = property.address.area || ''
+                            const city = property.address.city || ''
+                            if (area && city) return `${area}, ${city}`
+                            if (city) return city
+                            if (area) return area
+                          }
+                          // Fallback to individual fields
+                          const area = property.area || ''
+                          const city = property.city || ''
+                          if (area && city) return `${area}, ${city}`
+                          if (city) return city
+                          if (area) return area
+                          // Final fallback
+                          return property.location || "Unknown Location"
+                        })()
                         const price = property.pricing?.pricePerBed || property.price || 0
                         const rooms = property.totalRooms || property.rooms || 0
                         const status = property.status || (property.isVerified ? "active" : (property.isActive ? "pending" : "rejected"))
@@ -986,9 +1001,21 @@ function AdminDashboardContent() {
                               <p className="text-sm text-slate-700">{owner}</p>
                             </td>
                             <td className="p-4">
-                              <div className="flex items-center text-sm text-slate-600">
-                                <MapPin className="w-4 h-4 mr-2" />
-                                {location}
+                              <div className="flex items-start text-sm text-slate-600">
+                                <MapPin className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                                <div className="space-y-1">
+                                  <div>{location}</div>
+                                  {(() => {
+                                    // Show province and country if available
+                                    const province = property.address?.province || property.province || ''
+                                    const country = property.address?.country || property.country || ''
+                                    const details = [province, country].filter(Boolean).join(', ')
+                                    return details ? (
+                                      <div className="text-xs text-slate-500">{details}</div>
+                                    ) : null
+                                  })()
+                                  }
+                                </div>
                               </div>
                             </td>
                             <td className="p-4">

@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "@/contexts/auth-context"
 import { useChat } from "@/contexts/chat-context"
@@ -50,6 +51,7 @@ function FindRoomsContent() {
   const searchParams = useSearchParams()
 
   const [showProfile, setShowProfile] = useState(false)
+  const [showMobileProfileSheet, setShowMobileProfileSheet] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -469,150 +471,253 @@ function FindRoomsContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f7f7] pb-9 md:pb-0">
-      {/* Custom Navbar for Find Rooms - Hidden on mobile */}
-      <nav className="bg-[#f7f7f7] border-b-0 shadow-none hidden md:block">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12">
-          <div className="flex items-center h-24 gap-6 sm:gap-10">
-            {/* Logo with no text */}
-            <div className="flex-shrink-0">
-              <Logo size={60} showText={false} className="cursor-pointer" />
-            </div>
+    <div className="min-h-screen bg-white pb-9 md:pb-0">
+      {/* Desktop sticky header */}
+      <div className="hidden md:block sticky top-0 z-50 bg-white shadow">
+        {/* Custom Navbar for Find Rooms */}
+        <nav>
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12">
+            <div className="flex items-center h-24 gap-6 sm:gap-10">
+              {/* Logo with no text */}
+              <div className="flex-shrink-0">
+                <Logo size={60} showText={false} className="cursor-pointer" />
+              </div>
 
-            {/* Property Type Navigation - Center, increased spacing and font size */}
-            <div className="flex-1 flex justify-center min-w-0 mx-4 sm:mx-8">
-              <div className="flex items-center space-x-2 overflow-x-auto scrollbar-hide max-w-full">
-                <div className="flex items-center space-x-4 min-w-max px-2">
-                  {[
-                    { id: "hostel", label: "Hostels", icon: "/Hostel.png" },
-                    { id: "apartment", label: "Apartments", icon: "/apartment.png" },
-                    { id: "house", label: "Homes", icon: "/house.png" },
-                    { id: "office", label: "Office", icon: "/office.jpg" },
-                    { id: "hostel-mess", label: "Mess", icon: "/mess.png" },
-                  ].map((type) => {
-                    const isActive = filters.propertyType === type.id
-                    return (
-                      <Button
-                        key={type.id}
-                        variant={isActive ? "default" : "ghost"}
-                        onClick={() => handlePropertyTypeChange(type.id)}
-                        className={`group flex items-center space-x-2 px-4 py-2 rounded-xl whitespace-nowrap text-base font-semibold ${isActive ? "bg-emerald-500 text-white" : "text-slate-600 hover:text-emerald-600"}`}
-                      >
-                        <Image
-                          src={type.icon || "/placeholder.svg"}
-                          alt={type.label + " icon"}
-                          width={24}
-                          height={24}
-                          className={`rounded-md object-contain ${isActive ? "" : "opacity-80"}`}
-                        />
-                        <span>{type.label}</span>
-                      </Button>
-                    )
-                  })}
+              {/* Property Type Navigation - Center, increased spacing and font size */}
+              <div className="flex-1 flex justify-center min-w-0 mx-4 sm:mx-8">
+                <div className="flex items-center space-x-2 overflow-x-auto scrollbar-hide max-w-full">
+                  <div className="flex items-center space-x-4 min-w-max px-2">
+                    {[
+                      { id: "hostel", label: "Hostels", icon: "/Hostel.png" },
+                      { id: "apartment", label: "Apartments", icon: "/apartment.png" },
+                      { id: "house", label: "Homes", icon: "/house.png" },
+                      { id: "office", label: "Office", icon: "/office.jpg" },
+                      { id: "hostel-mess", label: "Mess", icon: "/mess.png" },
+                    ].map((type) => {
+                      const isActive = filters.propertyType === type.id
+                      return (
+                        <Button
+                          key={type.id}
+                          variant={isActive ? "default" : "ghost"}
+                          onClick={() => handlePropertyTypeChange(type.id)}
+                          className={`group flex items-center space-x-2 px-4 py-2 rounded-xl whitespace-nowrap text-base font-semibold ${isActive ? "bg-emerald-500 text-white" : "text-slate-600 hover:text-emerald-600"}`}
+                        >
+                          <Image
+                            src={type.icon || "/placeholder.svg"}
+                            alt={type.label + " icon"}
+                            width={24}
+                            height={24}
+                            className={`rounded-md object-contain ${isActive ? "" : "opacity-80"}`}
+                          />
+                          <span>{type.label}</span>
+                        </Button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+              {/* Profile icon only, much larger for better appearance */}
+              <div className="flex items-center flex-shrink-0">
+                <Link
+                  href="/list-property"
+                  className="mr-4 text-slate-700 hover:text-emerald-600 font-medium flex items-center space-x-2 transition-colors"
+                >
+                  <Building className="w-5 h-5" />
+                  <span className="text-base">Become a Host</span>
+                </Link>
+
+                <div className="relative profile-dropdown-container">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowProfile(!showProfile)}
+                    className="flex items-center hover:bg-slate-100 px-4 py-4"
+                    size="lg"
+                  >
+                    {user ? (
+                      <Avatar className="w-16 h-16">
+                        <AvatarImage src={user.avatar || ""} alt={user.name} />
+                        <AvatarFallback className="bg-emerald-100 text-emerald-600 text-xl font-semibold">
+                          {user.name
+                            ?.split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                    ) : (
+                      <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <User className="w-10 h-10 text-emerald-600" />
+                      </div>
+                    )}
+                  </Button>
+
+                  {/* Profile Dropdown */}
+                  {showProfile && (
+                    <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50">
+                      {user ? (
+                        <>
+                          <div className="px-4 py-3 border-b border-slate-200">
+                            <div className="flex items-center space-x-3">
+                              <Avatar className="w-12 h-12">
+                                <AvatarImage src={user.avatar || ""} alt={user.name} />
+                                <AvatarFallback className="bg-emerald-100 text-emerald-600 font-medium">
+                                  {user.name
+                                    ?.split(" ")
+                                    .map((n) => n[0])
+                                    .join("")
+                                    .toUpperCase() || "U"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0 flex-1">
+                                <div className="font-medium text-slate-800 truncate">{user?.name}</div>
+                                <div className="text-sm text-slate-600 truncate break-all">{user?.email}</div>
+                                <Badge className="bg-emerald-100 text-emerald-700 text-xs mt-1">{user?.role}</Badge>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="py-2">
+                            <Link
+                              href="/my-bookings"
+                              className="flex items-center space-x-3 px-4 py-2 text-slate-700 hover:bg-slate-50 transition-colors"
+                            >
+                              <Heart className="w-4 h-4" />
+                              <span>My Bookings</span>
+                            </Link>
+                            <button
+                              onClick={logout}
+                              className="flex items-center space-x-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors w-full text-left"
+                            >
+                              <LogOut className="w-4 h-4" />
+                              <span>Logout</span>
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="py-2">
+                          <Link
+                            href="/auth/login"
+                            className="flex items-center space-x-3 px-4 py-2 text-emerald-600 hover:bg-emerald-50 transition-colors"
+                          >
+                            <User className="w-4 h-4" />
+                            <span>Login</span>
+                          </Link>
+                          <Link
+                            href="/signup"
+                            className="flex items-center space-x-3 px-4 py-2 text-emerald-600 hover:bg-emerald-50 transition-colors"
+                          >
+                            <User className="w-4 h-4" />
+                            <span>Sign Up</span>
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-            {/* Profile icon only, much larger for better appearance */}
-            <div className="flex items-center flex-shrink-0">
-              <Link
-                href="/list-property"
-                className="mr-4 text-slate-700 hover:text-emerald-600 font-medium flex items-center space-x-2 transition-colors"
-              >
-                <Building className="w-5 h-5" />
-                <span className="text-base">Become a Host</span>
-              </Link>
+          </div>
+        </nav>
+        {/* Desktop Search Bar Section */}
+        <div className="border-b-0">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+            <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-none border-0 flex flex-col gap-4">
+              <div className="flex justify-center items-center">
+                <div className="flex items-center w-full max-w-2xl search-container relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 sm:w-5 h-4 sm:h-5 text-slate-400 z-10" />
+                  <Input
+                    placeholder="Search hostels, cities, areas..."
+                    value={filters.searchQuery}
+                    onChange={(e) => handleSearchInputChange(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => {
+                      if (filters.searchQuery.length > 0 && searchSuggestions.length > 0) {
+                        setShowSuggestions(true)
+                      }
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => {
+                        setShowSuggestions(false)
+                        setSelectedSuggestionIndex(-1)
+                      }, 200)
+                    }}
+                    className="pl-8 sm:pl-10 pr-20 sm:pr-24 h-10 sm:h-12 border-slate-200 text-slate-800 text-sm sm:text-base w-full"
+                  />
 
-              <div className="relative profile-dropdown-container">
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowProfile(!showProfile)}
-                  className="flex items-center hover:bg-slate-100 px-4 py-4"
-                  size="lg"
-                >
-                  {user ? (
-                    <Avatar className="w-16 h-16">
-                      <AvatarImage src={user.avatar || ""} alt={user.name} />
-                      <AvatarFallback className="bg-emerald-100 text-emerald-600 text-xl font-semibold">
-                        {user.name
-                          ?.split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .toUpperCase() || "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                  ) : (
-                    <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <User className="w-10 h-10 text-emerald-600" />
+                  <button
+                    onClick={handleSearch}
+                    className="absolute right-10 sm:right-12 top-1/2 -translate-y-1/2 flex items-center justify-center h-6 sm:h-8 w-6 sm:w-8 bg-emerald-500 rounded-full text-white hover:bg-emerald-600 z-10"
+                    aria-label="Search"
+                  >
+                    <Search className="w-3 sm:w-4 h-3 sm:h-4" />
+                  </button>
+
+                  <button
+                    onClick={() => setShowFilters(true)}
+                    className="absolute right-2 sm:right-2 top-1/2 -translate-y-1/2 flex items-center justify-center h-6 sm:h-8 w-6 sm:w-8 border border-slate-300 rounded-full text-slate-700 hover:bg-slate-50 z-10"
+                    aria-label="Filters"
+                  >
+                    <SlidersHorizontal className="w-3 sm:w-4 h-3 sm:h-4" />
+                  </button>
+
+                  {/* Search Suggestions Dropdown */}
+                  {showSuggestions && searchSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto animate-in slide-in-from-top-2 duration-200">
+                      <div className="py-1">
+                        {searchSuggestions.map((suggestion, index) => (
+                          <button
+                            key={index}
+                            onClick={() => handleSuggestionSelect(suggestion)}
+                            className={`w-full text-left px-3 py-2.5 transition-colors duration-150 flex items-center space-x-3 group ${
+                              index === selectedSuggestionIndex
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "hover:bg-emerald-50 hover:text-emerald-700"
+                            }`}
+                          >
+                            <MapPin
+                              className={`w-4 h-4 flex-shrink-0 transition-colors duration-150 ${
+                                index === selectedSuggestionIndex
+                                  ? "text-emerald-500"
+                                  : "text-slate-400 group-hover:text-emerald-500"
+                              }`}
+                            />
+                            <span
+                              className={`text-sm font-medium ${
+                                index === selectedSuggestionIndex
+                                  ? "text-emerald-700"
+                                  : "text-slate-700 group-hover:text-emerald-700"
+                              }`}
+                            >
+                              {suggestion}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                      <div className="px-3 py-2 border-t border-slate-100 bg-slate-50">
+                        <p className="text-xs text-slate-500 flex items-center">
+                          <Search className="w-3 h-3 mr-1" />
+                          Press Enter to search or click a suggestion
+                        </p>
+                      </div>
                     </div>
                   )}
-                </Button>
+                </div>
 
-                {/* Profile Dropdown */}
-                {showProfile && (
-                  <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50">
-                    {user ? (
-                      <>
-                        <div className="px-4 py-3 border-b border-slate-200">
-                          <div className="flex items-center space-x-3">
-                            <Avatar className="w-12 h-12">
-                              <AvatarImage src={user.avatar || ""} alt={user.name} />
-                              <AvatarFallback className="bg-emerald-100 text-emerald-600 font-medium">
-                                {user.name
-                                  ?.split(" ")
-                                  .map((n) => n[0])
-                                  .join("")
-                                  .toUpperCase() || "U"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0 flex-1">
-                              <div className="font-medium text-slate-800 truncate">{user?.name}</div>
-                              <div className="text-sm text-slate-600 truncate break-all">{user?.email}</div>
-                              <Badge className="bg-emerald-100 text-emerald-700 text-xs mt-1">{user?.role}</Badge>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="py-2">
-                          <Link
-                            href="/my-bookings"
-                            className="flex items-center space-x-3 px-4 py-2 text-slate-700 hover:bg-slate-50 transition-colors"
-                          >
-                            <Heart className="w-4 h-4" />
-                            <span>My Bookings</span>
-                          </Link>
-                          <button
-                            onClick={logout}
-                            className="flex items-center space-x-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors w-full text-left"
-                          >
-                            <LogOut className="w-4 h-4" />
-                            <span>Logout</span>
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="py-2">
-                        <Link
-                          href="/auth/login"
-                          className="flex items-center space-x-3 px-4 py-2 text-emerald-600 hover:bg-emerald-50 transition-colors"
-                        >
-                          <User className="w-4 h-4" />
-                          <span>Login</span>
-                        </Link>
-                        <Link
-                          href="/signup"
-                          className="flex items-center space-x-3 px-4 py-2 text-emerald-600 hover:bg-emerald-50 transition-colors"
-                        >
-                          <User className="w-4 h-4" />
-                          <span>Sign Up</span>
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <button
+                  onClick={() => setShowWishlist(!showWishlist)}
+                  className={`flex items-center justify-center h-10 sm:h-12 w-10 sm:w-12 border rounded-full transition-colors flex-shrink-0 ${
+                    showWishlist
+                      ? "border-red-500 bg-red-500 text-white"
+                      : "border-slate-300 text-slate-700 hover:border-red-400 hover:text-red-500"
+                  }`}
+                  aria-label="Wishlist"
+                >
+                  <Heart className={`w-5 h-5 ${showWishlist ? "fill-white" : ""}`} />
+                </button>
               </div>
             </div>
           </div>
         </div>
-      </nav>
+      </div>
 
       {/* Mobile Search Section - Single Clean Design */}
       <div className="md:hidden bg-white sticky top-0 z-50 shadow">
@@ -691,107 +796,6 @@ function FindRoomsContent() {
                 </button>
               )
             })}
-          </div>
-        </div>
-      </div>
-
-      {/* Desktop Search Bar Section - Hidden on mobile */}
-      <div className="hidden md:block bg-[#f7f7f7] border-b-0 sticky top-0 z-50 shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          <div className="bg-[#f7f7f7] rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-none border-0 flex flex-col gap-4">
-            <div className="flex justify-center items-center">
-              <div className="flex items-center w-full max-w-2xl search-container relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 sm:w-5 h-4 sm:h-5 text-slate-400 z-10" />
-                <Input
-                  placeholder="Search hostels, cities, areas..."
-                  value={filters.searchQuery}
-                  onChange={(e) => handleSearchInputChange(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  onFocus={() => {
-                    if (filters.searchQuery.length > 0 && searchSuggestions.length > 0) {
-                      setShowSuggestions(true)
-                    }
-                  }}
-                  onBlur={() => {
-                    setTimeout(() => {
-                      setShowSuggestions(false)
-                      setSelectedSuggestionIndex(-1)
-                    }, 200)
-                  }}
-                  className="pl-8 sm:pl-10 pr-20 sm:pr-24 h-10 sm:h-12 border-slate-200 text-slate-800 text-sm sm:text-base w-full"
-                />
-
-                <button
-                  onClick={handleSearch}
-                  className="absolute right-10 sm:right-12 top-1/2 -translate-y-1/2 flex items-center justify-center h-6 sm:h-8 w-6 sm:w-8 bg-emerald-500 rounded-full text-white hover:bg-emerald-600 z-10"
-                  aria-label="Search"
-                >
-                  <Search className="w-3 sm:w-4 h-3 sm:h-4" />
-                </button>
-
-                <button
-                  onClick={() => setShowFilters(true)}
-                  className="absolute right-2 sm:right-2 top-1/2 -translate-y-1/2 flex items-center justify-center h-6 sm:h-8 w-6 sm:w-8 border border-slate-300 rounded-full text-slate-700 hover:bg-slate-50 z-10"
-                  aria-label="Filters"
-                >
-                  <SlidersHorizontal className="w-3 sm:w-4 h-3 sm:h-4" />
-                </button>
-
-                {/* Search Suggestions Dropdown */}
-                {showSuggestions && searchSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto animate-in slide-in-from-top-2 duration-200">
-                    <div className="py-1">
-                      {searchSuggestions.map((suggestion, index) => (
-                        <button
-                          key={index}
-                          onClick={() => handleSuggestionSelect(suggestion)}
-                          className={`w-full text-left px-3 py-2.5 transition-colors duration-150 flex items-center space-x-3 group ${
-                            index === selectedSuggestionIndex
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "hover:bg-emerald-50 hover:text-emerald-700"
-                          }`}
-                        >
-                          <MapPin
-                            className={`w-4 h-4 flex-shrink-0 transition-colors duration-150 ${
-                              index === selectedSuggestionIndex
-                                ? "text-emerald-500"
-                                : "text-slate-400 group-hover:text-emerald-500"
-                            }`}
-                          />
-                          <span
-                            className={`text-sm font-medium ${
-                              index === selectedSuggestionIndex
-                                ? "text-emerald-700"
-                                : "text-slate-700 group-hover:text-emerald-700"
-                            }`}
-                          >
-                            {suggestion}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                    <div className="px-3 py-2 border-t border-slate-100 bg-slate-50">
-                      <p className="text-xs text-slate-500 flex items-center">
-                        <Search className="w-3 h-3 mr-1" />
-                        Press Enter to search or click a suggestion
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <button
-                onClick={() => setShowWishlist(!showWishlist)}
-                className={`flex items-center justify-center h-10 sm:h-12 w-10 sm:w-12 border rounded-full transition-colors flex-shrink-0 ${
-                  showWishlist
-                    ? "border-red-500 bg-red-500 text-white"
-                    : "border-slate-300 text-slate-700 hover:border-red-400 hover:text-red-500"
-                }`}
-                aria-label="Wishlist"
-              >
-                <Heart className={`w-5 h-5 ${showWishlist ? "fill-white" : ""}`} />
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -990,7 +994,7 @@ function FindRoomsContent() {
             {/* ...existing code... */}
 
             {/* Properties by City */}
-            <div className="space-y-10">
+            <div className="space-y-6">
               {/* Wishlist View */}
               {showWishlist && (
                 <div className="mb-8">
@@ -1044,9 +1048,23 @@ function FindRoomsContent() {
                             return "/placeholder.svg"
                           })()
                           const name = property.title || "Unnamed Property"
-                          const location = property.address
-                            ? `${property.address.area || ""}, ${property.address.city || ""}`
-                            : "Unknown Location"
+                          const location = (() => {
+                            // Handle structured address object
+                            if (property.address && typeof property.address === 'object') {
+                              const area = property.address.area || ''
+                              const city = property.address.city || ''
+                              if (area && city) return `${area}, ${city}`
+                              if (city) return city
+                              if (area) return area
+                            }
+                            // Fallback to individual fields
+                            const area = property.area || ''
+                            const city = property.city || ''
+                            if (area && city) return `${area}, ${city}`
+                            if (city) return city
+                            if (area) return area
+                            return "Unknown Location"
+                          })()
                           const price = property.pricing?.pricePerBed || 0
                           const rating = property.rating || 0
 
@@ -1279,9 +1297,23 @@ function FindRoomsContent() {
                                 return "/placeholder.svg"
                               })()
                               const name = property.title || "Unnamed Property"
-                              const location = property.address
-                                ? `${property.address.area || ""}, ${property.address.city || ""}`
-                                : "Unknown Location"
+                              const location = (() => {
+                                // Handle structured address object
+                                if (property.address && typeof property.address === 'object') {
+                                  const area = property.address.area || ''
+                                  const city = property.address.city || ''
+                                  if (area && city) return `${area}, ${city}`
+                                  if (city) return city
+                                  if (area) return area
+                                }
+                                // Fallback to individual fields
+                                const area = property.area || ''
+                                const city = property.city || ''
+                                if (area && city) return `${area}, ${city}`
+                                if (city) return city
+                                if (area) return area
+                                return "Unknown Location"
+                              })()
                               const price = property.pricing?.pricePerBed || 0
                               const rating = property.rating || 0
                               return (
@@ -1539,50 +1571,109 @@ function FindRoomsContent() {
       
 
           {/* Profile */}
-          <div className="relative profile-dropdown-container">
-            <button
-              aria-label="Profile"
-              onClick={() => (user ? setShowProfile(!showProfile) : router.push("/auth/login"))}
-              className="w-9 h-9 flex items-center justify-center rounded-md"
-              title="Profile"
-            >
-              {user ? (
-                <Avatar className="w-7 h-7">
-                  <AvatarImage src={user.avatar || ""} alt={user.name} />
-                  <AvatarFallback className="bg-emerald-100 text-emerald-600 text-xs font-semibold">
-                    {user.name
-                      ?.split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                      .toUpperCase() || "U"}
-                  </AvatarFallback>
-                </Avatar>
-              ) : (
-                <User className="w-5 h-5 text-slate-700" />
-              )}
-              <span className="sr-only">Profile</span>
-            </button>
+          <div className="relative">
+            {user ? (
+              <Sheet open={showMobileProfileSheet} onOpenChange={setShowMobileProfileSheet}>
+                <SheetTrigger asChild>
+                  <button
+                    aria-label="Profile"
+                    className="w-9 h-9 flex items-center justify-center rounded-md"
+                    title="Profile"
+                  >
+                    <Avatar className="w-7 h-7">
+                      <AvatarImage src={user.avatar || ""} alt={user.name} />
+                      <AvatarFallback className="bg-emerald-100 text-emerald-600 text-xs font-semibold">
+                        {user.name
+                          ?.split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="sr-only">Profile</span>
+                  </button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-80 p-0 bg-slate-50">
+                  <SheetTitle className="sr-only">User Profile Menu</SheetTitle>
+                  <div className="flex flex-col h-full">
+                    <div className="p-6 border-b border-slate-200 bg-white">
+                      <Logo size={40} textSize="lg" />
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                      {/* User Details Box */}
+                      <div className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-xl p-5 shadow-lg">
+                        <div className="flex items-center space-x-4">
+                          <Avatar className="w-16 h-16 border-2 border-white/50">
+                            <AvatarImage src={user.avatar || ""} alt={user.name} />
+                            <AvatarFallback className="bg-white text-emerald-600 text-2xl font-semibold">
+                              {user.name
+                                ?.split(" ")
+                                .map((n) => n[0])
+                                .join("")
+                                .toUpperCase() || "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-xl truncate">{user.name}</p>
+                            <p className="text-sm text-emerald-100 truncate">{user.email}</p>
+                          </div>
+                        </div>
+                        <div className="mt-4 border-t border-white/20 pt-4">
+                          <Badge
+                            variant="outline"
+                            className="border-emerald-300 bg-white/20 text-white text-xs capitalize"
+                          >
+                            {user.role}
+                          </Badge>
+                        </div>
+                      </div>
 
-            {/* Small profile dropdown for mobile */}
-            {showProfile && (
-              <div className="absolute bottom-12 right-0 w-56 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50">
-                {user ? (
-                  <>
-                    <Link href="/my-bookings" className="block px-4 py-2 text-slate-700 hover:bg-slate-50">
-                      My Bookings
-                    </Link>
-                    <button onClick={logout} className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50">
-                      Logout
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/signup" className="block px-4 py-2 text-emerald-600 hover:bg-emerald-50">
-                      Sign Up
-                    </Link>
-                  </>
-                )}
-              </div>
+                      {/* Navigation Links */}
+                      <div className="space-y-2">
+                        <Link
+                          href="/my-bookings"
+                          className="flex items-center px-4 py-3 text-slate-700 bg-white hover:bg-slate-100 rounded-lg transition-colors shadow-sm"
+                          onClick={() => setShowMobileProfileSheet(false)}
+                        >
+                          <Heart className="w-5 h-5 mr-3 text-slate-500" />
+                          <span className="font-medium">My Bookings</span>
+                        </Link>
+                        <Link
+                          href="/list-property"
+                          className="flex items-center w-full justify-start h-12 text-base px-4 py-3 bg-white hover:bg-slate-100 text-slate-700 rounded-lg shadow-sm transition-colors"
+                          onClick={() => setShowMobileProfileSheet(false)}
+                        >
+                          <Building className="w-5 h-5 mr-3 text-slate-500" />
+                          <span className="font-medium">Become a Host</span>
+                        </Link>
+                      </div>
+                    </div>
+                    <div className="p-6 border-t border-slate-200 bg-white">
+                      <Button
+                        variant="outline"
+                        className="w-full h-12 bg-transparent border-red-200 text-red-600 hover:border-red-500 hover:bg-red-50 hover:text-red-600 font-medium"
+                        onClick={() => {
+                          logout()
+                          setShowMobileProfileSheet(false)
+                        }}
+                      >
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Logout
+                      </Button>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            ) : (
+              <button
+                aria-label="Profile"
+                onClick={() => router.push("/auth/login")}
+                className="w-9 h-9 flex items-center justify-center rounded-md"
+                title="Profile"
+              >
+                <User className="w-5 h-5 text-slate-700" />
+                <span className="sr-only">Profile</span>
+              </button>
             )}
           </div>
         </div>
