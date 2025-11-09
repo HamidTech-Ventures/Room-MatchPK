@@ -1523,8 +1523,8 @@ function FindRoomsContent() {
                             })}
                           </div>
 
-                          {/* Mobile Grid - 2 cards per row */}
-                          <div className="md:hidden grid grid-cols-2 gap-3 px-1">
+                          {/* Mobile Horizontal Scroll - 2 cards visible */}
+                          <div className="md:hidden flex overflow-x-auto scroll-smooth scrollbar-hide gap-4 px-4" style={{ scrollSnapType: 'x mandatory' }}>
                             {cityProperties.map((property: any) => {
                               // Extract image URL properly - handle multiple formats
                               const imageUrl = (() => {
@@ -1580,7 +1580,8 @@ function FindRoomsContent() {
                               return (
                                 <div
                                   key={property._id}
-                                  className="group cursor-pointer"
+                                  className="flex-shrink-0 w-[calc(50vw-24px)] group cursor-pointer"
+                                  style={{ scrollSnapAlign: 'start' }}
                                   onClick={() => {
                                     if (!requireAuth('view-property', '/find-rooms')) return
                                     router.push(`/property/${property._id}`)
