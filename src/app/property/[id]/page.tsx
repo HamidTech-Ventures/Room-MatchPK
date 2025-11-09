@@ -718,10 +718,39 @@ Thank you!`
                   </Badge>
                 )}
                 <span>
-                  {propertyData.propertyType === "hostel-mess" ?
-                    `🍽️ ${propertyData.availableRooms || 0} of ${propertyData.totalRooms || 0} spots available` :
-                    `🏠 ${propertyData.availableRooms || 0} of ${propertyData.totalRooms || 0} rooms available`
-                  }
+                  {(() => {
+                    // Get available and total rooms with multiple fallbacks
+                    const available = propertyData.availableRooms || 
+                                    propertyData.roomsAvailable || 
+                                    propertyData.availability?.available || 
+                                    propertyData.rooms?.available
+                    
+                    const total = propertyData.totalRooms || 
+                                propertyData.roomsTotal || 
+                                propertyData.availability?.total || 
+                                propertyData.rooms?.total || 
+                                propertyData.capacity
+                    
+                    // If no room data available, show different message based on property type
+                    if (!available && !total) {
+                      if (propertyData.propertyType === "hostel-mess") {
+                        return "🍽️ Contact for availability"
+                      } else if (propertyData.propertyType === "apartment" || propertyData.propertyType === "house") {
+                        return "🏠 Available for rent"
+                      } else {
+                        return "🏠 Contact for availability"
+                      }
+                    }
+                    
+                    // If we have room data, show it
+                    const availableCount = available || 0
+                    const totalCount = total || availableCount || 1
+                    
+                    return propertyData.propertyType === "hostel-mess" ?
+                      `🍽️ ${availableCount} of ${totalCount} spots available` :
+                      `🏠 ${availableCount} of ${totalCount} rooms available`
+                  })()
+                }
                 </span>
               </div>
             </div>
@@ -1331,7 +1360,19 @@ Thank you!`
                 <div className="text-center text-sm text-slate-600">
                   <div className="flex items-center justify-center space-x-1 mb-2">
                     <Clock className="w-4 h-4" />
-                    <span>🔥 {propertyData.availableRooms || 0} rooms left</span>
+                    <span>🔥 {(() => {
+                      const available = propertyData.availableRooms || 
+                                      propertyData.roomsAvailable || 
+                                      propertyData.availability?.available || 
+                                      propertyData.rooms?.available
+                      
+                      if (!available) {
+                        return propertyData.propertyType === "apartment" || propertyData.propertyType === "house" ?
+                          "Available now" : "Contact for availability"
+                      }
+                      
+                      return `${available} rooms left`
+                    })()}</span>
                   </div>
                   <span>Free cancellation within 24 hours</span>
                 </div>

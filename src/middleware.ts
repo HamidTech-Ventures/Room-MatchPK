@@ -38,6 +38,10 @@ export default withAuth(
           '/api/properties/counts'
         ]
         
+        // Allow public access to individual property pages
+        const isPropertyDetailRoute = pathname.match(/^\/api\/properties\/[a-f0-9]{24}$/)
+        if (isPropertyDetailRoute) return true
+        
         const isPublicRoute = publicRoutes.some(route => 
           pathname === route || pathname.startsWith(route)
         )
@@ -48,8 +52,7 @@ export default withAuth(
         const protectedRoutes = [
           '/list-property',
           '/admin',
-          '/property',
-          '/api/properties',
+          '/api/properties/create',
           '/api/users'
         ]
         
