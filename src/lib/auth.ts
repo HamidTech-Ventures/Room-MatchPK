@@ -16,7 +16,8 @@ export async function verifyPassword(password: string, hashedPassword: string): 
 
 export function generateToken(user: User): string {
   if (!process.env.NEXTAUTH_SECRET) {
-    throw new Error('NEXTAUTH_SECRET is not defined')
+    console.error('NEXTAUTH_SECRET is not defined')
+    throw new Error('Authentication configuration error')
   }
   
   return jwt.sign(
@@ -32,7 +33,8 @@ export function generateToken(user: User): string {
 
 export function verifyToken(token: string): any {
   if (!process.env.NEXTAUTH_SECRET) {
-    throw new Error('NEXTAUTH_SECRET is not defined')
+    console.error('NEXTAUTH_SECRET is not defined')
+    throw new Error('Authentication configuration error')
   }
   
   return jwt.verify(token, process.env.NEXTAUTH_SECRET)
@@ -40,6 +42,7 @@ export function verifyToken(token: string): any {
 
 export async function createUser(userData: CreateDocument<User>, silentMode: boolean = false): Promise<User | null> {
   if (!isDatabaseConfigured()) {
+    console.error('Database not configured for user creation')
     throw new Error('Database not configured. Please set up MongoDB to create users.')
   }
 
@@ -50,8 +53,9 @@ export async function createUser(userData: CreateDocument<User>, silentMode: boo
   const existingUser = await users.findOne({ email: userData.email })
   if (existingUser) {
     if (silentMode) {
-      return null // Return null instead of throwing error in silent mode
+      return null
     }
+    console.warn('Attempt to create user with existing email')
     throw new Error('User already exists')
   }
   
@@ -79,8 +83,7 @@ export async function createUser(userData: CreateDocument<User>, silentMode: boo
     }
     
     if (!silentMode) {
-      console.log('User created successfully:', { 
-        email: createdUser.email, 
+      console.info('User created successfully:', { 
         role: createdUser.role, 
         provider: createdUser.provider 
       })
@@ -88,11 +91,15 @@ export async function createUser(userData: CreateDocument<User>, silentMode: boo
     
     return createdUser
   } catch (error: any) {
-    console.error('Error creating user:', error)
+    console.error('Error creating user:', {
+      error: error.message,
+      code: error.code,
+      timestamp: new Date().toISOString()
+    })
     // Handle duplicate key error specifically
     if (error.code === 11000) {
       if (silentMode) {
-        return null // Return null instead of throwing error in silent mode
+        return null
       }
       throw new Error('User already exists')
     }
@@ -137,15 +144,18 @@ export async function findUserById(id: string): Promise<User | null> {
 export async function authenticateUser(email: string, password: string): Promise<User | null> {
   const user = await findUserByEmail(email)
   if (!user) {
+    console.warn('Authentication attempt with non-existent email')
     throw new Error('EMAIL_NOT_FOUND')
   }
   
   if (!user.password) {
+    console.warn('Authentication attempt on OAuth-only account')
     throw new Error('GOOGLE_ONLY_ACCOUNT')
   }
   
   const isValid = await verifyPassword(password, user.password)
   if (!isValid) {
+    console.warn('Authentication attempt with invalid password')
     throw new Error('WRONG_PASSWORD')
   }
   
@@ -180,15 +190,16 @@ export async function initializeDefaultAdmin(): Promise<void> {
     
     if (createdAdmin) {
       // Admin was created successfully
-      console.log('✅ Default admin user created successfully')
-      console.log(`📧 Admin Email: ${adminEmail}`)
-      console.log(`🔑 Admin Password: ${adminPassword}`)
+      console.info('Default admin user created successfully')
     }
     // If createdAdmin is null, it means admin already exists - no action needed
     
     adminInitialized = true
   } catch (error) {
     // Only log critical errors, not duplicate key errors
-    console.error('❌ Critical error initializing default admin:', error)
+    console.error('Critical error initializing default admin:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    })
   }
 }
