@@ -790,13 +790,13 @@ function FindRoomsContent() {
         </div>
       </div>
 
-      {/* Mobile Search Section - Single Clean Design */}
+      {/* Mobile Search Section - Round Design with Shadow */}
       <div className="md:hidden bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-sm border-b border-gray-200/30">
-        {/* Main Search Bar - Reduced Size */}
+        {/* Main Search Bar - Round with Shadow */}
         <div className="px-4 py-3">
           <div className="relative flex items-center gap-2">
             <div className="flex-1 relative">
-              <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search hostels, city"
@@ -808,7 +808,8 @@ function FindRoomsContent() {
                 onFocus={() => {
                   if (!requireAuth('search', '/find-rooms')) return
                 }}
-                className="w-full pl-8 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-colors"
+                className="w-full pl-10 pr-3 py-3 text-sm bg-white border-0 rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-lg hover:shadow-xl"
+                style={{ boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05)' }}
               />
             </div>
             {/* Wishlist Button */}
@@ -817,19 +818,21 @@ function FindRoomsContent() {
                 if (!requireAuth('wishlist', '/find-rooms')) return
                 setShowWishlist(!showWishlist)
               }}
-              className={`p-2 rounded-lg transition-colors ${
-                showWishlist ? "bg-red-500 hover:bg-red-600" : "bg-gray-200 hover:bg-gray-300"
+              className={`p-3 rounded-full transition-all shadow-lg hover:shadow-xl ${
+                showWishlist ? "bg-red-500 hover:bg-red-600" : "bg-white hover:bg-gray-50"
               }`}
+              style={{ boxShadow: '0 6px 20px rgba(0, 0, 0, 0.1), 0 3px 8px rgba(0, 0, 0, 0.05)' }}
             >
               <Heart className={`w-4 h-4 ${showWishlist ? "text-white fill-white" : "text-gray-600"}`} />
             </button>
-            {/* Filter Button - Reduced Size */}
+            {/* Filter Button */}
             <button
               onClick={() => {
                 if (!requireAuth('filter', '/find-rooms')) return
                 setShowFilters(true)
               }}
-              className="p-2 bg-emerald-500 rounded-lg hover:bg-emerald-600 transition-colors"
+              className="p-3 bg-emerald-500 rounded-full hover:bg-emerald-600 transition-all shadow-lg hover:shadow-xl"
+              style={{ boxShadow: '0 6px 20px rgba(16, 185, 129, 0.3), 0 3px 8px rgba(16, 185, 129, 0.15)' }}
             >
               <SlidersHorizontal className="w-4 h-4 text-white" />
             </button>
