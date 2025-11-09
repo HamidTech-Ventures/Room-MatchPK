@@ -3,6 +3,13 @@ import { NextResponse } from "next/server"
 
 export default withAuth(
   function middleware(req) {
+    const { pathname } = req.nextUrl
+    
+    // Redirect root to find-rooms for better UX
+    if (pathname === '/') {
+      return NextResponse.redirect(new URL('/find-rooms', req.url))
+    }
+    
     // Add security headers
     const response = NextResponse.next()
     
@@ -17,16 +24,42 @@ export default withAuth(
   {
     callbacks: {
       authorized: ({ token, req }) => {
-        // Allow public routes
-        const publicRoutes = ['/login', '/signup', '/auth', '/api/auth']
+        const { pathname } = req.nextUrl
+        
+        // Always allow public routes
+        const publicRoutes = [
+          '/find-rooms',
+          '/about',
+          '/login',
+          '/signup',
+          '/auth',
+          '/api/auth'
+        ]
+        
         const isPublicRoute = publicRoutes.some(route => 
-          req.nextUrl.pathname.startsWith(route)
+          pathname === route || pathname.startsWith(route)
         )
         
         if (isPublicRoute) return true
         
-        // Require authentication for protected routes
-        return !!token
+        // Protected routes that require authentication
+        const protectedRoutes = [
+          '/list-property',
+          '/admin',
+          '/property',
+          '/api/properties',
+          '/api/users'
+        ]
+        
+        const isProtectedRoute = protectedRoutes.some(route => 
+          pathname.startsWith(route)
+        )
+        
+        if (isProtectedRoute && !token) {
+          return false // This will redirect to login
+        }
+        
+        return true
       },
     },
   }
