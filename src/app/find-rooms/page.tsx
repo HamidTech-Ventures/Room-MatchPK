@@ -1422,7 +1422,7 @@ function FindRoomsContent() {
                               return (
                                 <div
                                   key={property._id}
-                                  className="flex-shrink-0 w-44 md:w-44 group cursor-pointer"
+                                  className="flex-shrink-0 w-44 group cursor-pointer md:w-44"
                                   style={{ 
                                     scrollSnapAlign: 'start',
                                     minWidth: 'calc(50vw - 24px)' // Mobile: 2 cards per view
@@ -1432,9 +1432,9 @@ function FindRoomsContent() {
                                     router.push(`/property/${property._id}`)
                                   }}
                                 >
-                                  {/* Round Image */}
+                                  {/* Desktop: Round Image, Mobile: Square */}
                                   <div className="relative w-full aspect-square mb-3">
-                                    <div className="relative w-full h-full rounded-2xl overflow-hidden bg-gray-100">
+                                    <div className="relative w-full h-full rounded-2xl md:rounded-2xl overflow-hidden bg-gray-100">
                                       {/* Heart Icon - Wishlist */}
                                       <div className="absolute top-2 right-2 z-10">
                                         <button
