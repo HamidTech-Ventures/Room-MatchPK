@@ -792,8 +792,8 @@ function FindRoomsContent() {
 
       {/* Mobile Search Section - Single Clean Design */}
       <div className="md:hidden bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-sm border-b border-gray-200/30">
-        {/* Main Search Bar - Better Padding */}
-        <div className="px-4 py-4">
+        {/* Main Search Bar - Reduced Size */}
+        <div className="px-4 py-3">
           <div className="relative flex items-center gap-2">
             <div className="flex-1 relative">
               <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -842,9 +842,9 @@ function FindRoomsContent() {
           )}
         </div>
 
-        {/* Category Cards - Better Spacing */}
-        <div className="px-4 pb-4">
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide">
+        {/* Category Cards - Reduced Size */}
+        <div className="px-4 pb-3">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
             {[
               { id: "hostel", label: "Hostels", icon: "/Hostel.png" },
 
@@ -861,17 +861,17 @@ function FindRoomsContent() {
                     if (!requireAuth('filter', '/find-rooms')) return
                     handleFilterChange("propertyType", isActive ? "" : category.id)
                   }}
-                  className={`flex-shrink-0 min-w-[70px] p-3 rounded-xl border-2 transition-all ${
+                  className={`flex-shrink-0 min-w-[65px] p-2 rounded-lg border-2 transition-all ${
                     isActive ? "border-emerald-500 bg-emerald-50" : "border-gray-200 bg-white hover:border-emerald-300"
                   }`}
                 >
-                  <div className="flex flex-col items-center space-y-1.5">
-                    <div className="w-7 h-7 rounded-lg overflow-hidden pointer-events-none">
+                  <div className="flex flex-col items-center space-y-1">
+                    <div className="w-6 h-6 rounded-md overflow-hidden pointer-events-none">
                       <Image
                         src={category.icon || "/placeholder.svg"}
                         alt={category.label}
-                        width={28}
-                        height={28}
+                        width={24}
+                        height={24}
                         className="w-full h-full object-cover pointer-events-none"
                       />
                     </div>
@@ -1079,7 +1079,7 @@ function FindRoomsContent() {
 
       <UnifiedChat isOpen={isChatOpen} onToggle={toggleChat} />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 sm:py-8 pb-16 md:pb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="flex flex-col gap-6 sm:gap-8">
 
           
@@ -1361,10 +1361,10 @@ function FindRoomsContent() {
                             </svg>
                           </button>
 
-                          {/* Scroll container - Mobile: 2 cards, Desktop: Multiple cards */}
+                          {/* Scroll container - Compact Airbnb Style */}
                           <div
                             id={`scroll-${city}`}
-                            className="flex overflow-x-auto scroll-smooth scrollbar-hide gap-3 md:gap-4 py-2 px-1"
+                            className="flex overflow-x-auto scroll-smooth scrollbar-hide gap-4 py-2 px-1"
                             style={{ scrollSnapType: 'x mandatory' }}
                           >
                             {cityProperties.map((property: any) => {
@@ -1422,19 +1422,16 @@ function FindRoomsContent() {
                               return (
                                 <div
                                   key={property._id}
-                                  className="flex-shrink-0 w-44 group cursor-pointer md:w-44"
-                                  style={{ 
-                                    scrollSnapAlign: 'start',
-                                    minWidth: 'calc(50vw - 24px)' // Mobile: 2 cards per view
-                                  }}
+                                  className="flex-shrink-0 w-44 group cursor-pointer"
+                                  style={{ scrollSnapAlign: 'start' }}
                                   onClick={() => {
                                     if (!requireAuth('view-property', '/find-rooms')) return
                                     router.push(`/property/${property._id}`)
                                   }}
                                 >
-                                  {/* Desktop: Round Image, Mobile: Square */}
+                                  {/* Round Image */}
                                   <div className="relative w-full aspect-square mb-3">
-                                    <div className="relative w-full h-full rounded-2xl md:rounded-2xl overflow-hidden bg-gray-100">
+                                    <div className="relative w-full h-full rounded-2xl overflow-hidden bg-gray-100">
                                       {/* Heart Icon - Wishlist */}
                                       <div className="absolute top-2 right-2 z-10">
                                         <button
@@ -1636,34 +1633,43 @@ function FindRoomsContent() {
         </div>
       </div>
 
-      {/* Bottom Navigation Bar - Mobile Only (improved spacing) */}
+      {/* Bottom Navigation Bar - Mobile Only (compact, bottom-aligned) */}
       <div
-        className="md:hidden fixed bottom-0 left-0 right-0 h-12 bg-white border-t border-slate-200 z-40 px-4"
+        className="md:hidden fixed bottom-0 left-0 right-0 h-9 overflow-hidden bg-white border-t border-slate-200 z-40"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="flex items-center justify-between h-full">
+        <div className="flex items-end justify-between h-full px-2 pb-1">
           {/* Home */}
           <button
             aria-label="Home"
             onClick={() => router.push("/find-rooms")}
-            className="flex flex-col items-center justify-center py-1 px-3 rounded-lg hover:bg-slate-50"
+            className="w-9 h-9 flex items-center justify-center rounded-md"
             title="Home"
           >
             <Home className="w-5 h-5 text-slate-700" />
-            <span className="text-xs text-slate-600 mt-1">Home</span>
+            <span className="sr-only">Home</span>
           </button>
 
-
+          {/* Property Types / Browse */}
+          <button
+            aria-label="Browse"
+            onClick={() => router.push("/find-rooms")}
+            className="w-9 h-9 flex items-center justify-center rounded-md"
+            title="Browse"
+          >
+            <Building className="w-5 h-5 text-slate-700" />
+            <span className="sr-only">Browse</span>
+          </button>
 
           {/* Chat (toggle unified chat) */}
           <button
             aria-label="Chat"
             onClick={() => toggleChat()}
-            className="flex flex-col items-center justify-center py-1 px-3 rounded-lg hover:bg-emerald-50"
+            className="w-9 h-9 flex items-center justify-center rounded-md"
             title="Chat"
           >
             <MessageCircle className="w-5 h-5 text-emerald-600" />
-            <span className="text-xs text-emerald-600 mt-1">Chat</span>
+            <span className="sr-only">Chat</span>
           </button>
 
       
