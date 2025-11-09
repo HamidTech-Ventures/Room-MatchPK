@@ -580,26 +580,28 @@ function FindRoomsContent() {
                 })}
               </div>
 
-              {/* Right: Host CTA + compact profile */}
-              <div className="flex items-center space-x-2 flex-shrink-0">
+              {/* Right: Amazing Host CTA + profile positioned at center between search and nav */}
+              <div className="flex items-center space-x-4 flex-shrink-0" style={{ alignSelf: 'center', marginTop: '6px' }}>
                 <Link
                   href="/list-property"
-                  className="text-slate-700 hover:text-emerald-600 font-medium flex items-center space-x-1 transition-all duration-200 text-xs px-2.5 py-1.5 rounded-lg hover:bg-emerald-50/80 border border-transparent hover:border-emerald-200"
+                  className="group relative flex items-center space-x-2 h-10 px-5 rounded-full font-medium text-sm transition-all duration-300 transform hover:scale-102 cursor-pointer bg-white/90 text-slate-700 hover:text-emerald-600 hover:bg-white shadow-md hover:shadow-lg border border-gray-200 hover:border-emerald-300"
+                  style={{ boxShadow: '0 6px 20px rgba(0, 0, 0, 0.1), 0 3px 10px rgba(0, 0, 0, 0.05)' }}
                 >
-                  <Building className="w-3.5 h-3.5" />
-                  <span>Become a Host</span>
+                  <Building className="w-4 h-4" />
+                  <span className="font-semibold">Become a Host</span>
                 </Link>
 
                 <div className="relative profile-dropdown-container">
                   <Button
                     variant="ghost"
                     onClick={() => setShowProfile(!showProfile)}
-                    className="px-2 py-1.5 h-7 rounded-lg hover:bg-emerald-50/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-emerald-200"
+                    className="group relative h-10 w-10 rounded-full transition-all duration-300 transform hover:scale-102 cursor-pointer bg-white/90 hover:bg-white shadow-md hover:shadow-lg border border-gray-200 hover:border-emerald-300 p-0"
+                    style={{ boxShadow: '0 6px 20px rgba(0, 0, 0, 0.1), 0 3px 10px rgba(0, 0, 0, 0.05)' }}
                   >
                     {user ? (
-                      <Avatar className="w-5 h-5">
+                      <Avatar className="w-7 h-7">
                         <AvatarImage src={user.avatar || ""} alt={user.name} />
-                        <AvatarFallback className="bg-gradient-to-br from-emerald-100 to-emerald-200 text-emerald-700 text-xs font-semibold">
+                        <AvatarFallback className="bg-gradient-to-br from-emerald-100 to-emerald-200 text-emerald-700 text-sm font-semibold">
                           {user.name
                             ?.split(" ")
                             .map((n) => n[0])
@@ -608,7 +610,7 @@ function FindRoomsContent() {
                         </AvatarFallback>
                       </Avatar>
                     ) : (
-                      <User className="w-3.5 h-3.5 text-slate-600" />
+                      <User className="w-5 h-5 text-slate-600 group-hover:text-emerald-600" />
                     )}
                   </Button>
 
