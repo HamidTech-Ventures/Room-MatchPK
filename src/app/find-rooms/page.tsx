@@ -1361,10 +1361,10 @@ function FindRoomsContent() {
                             </svg>
                           </button>
 
-                          {/* Scroll container - Compact Airbnb Style */}
+                          {/* Desktop Scroll container - Compact Airbnb Style */}
                           <div
                             id={`scroll-${city}`}
-                            className="flex overflow-x-auto scroll-smooth scrollbar-hide gap-4 py-2 px-1"
+                            className="hidden md:flex overflow-x-auto scroll-smooth scrollbar-hide gap-4 py-2 px-1"
                             style={{ scrollSnapType: 'x mandatory' }}
                           >
                             {cityProperties.map((property: any) => {
@@ -1522,6 +1522,163 @@ function FindRoomsContent() {
                               )
                             })}
                           </div>
+
+                          {/* Mobile Grid - 2 cards per row */}
+                          <div className="md:hidden grid grid-cols-2 gap-3 px-1">
+                            {cityProperties.map((property: any) => {
+                              // Extract image URL properly - handle multiple formats
+                              const imageUrl = (() => {
+                                if (Array.isArray(property.images) && property.images.length > 0) {
+                                  const firstImage = property.images[0]
+
+                                  // Handle string URLs
+                                  if (typeof firstImage === "string" && firstImage.trim() !== "") {
+                                    return firstImage
+                                  }
+                                  // Handle object with url property
+                                  else if (typeof firstImage === "object" && firstImage !== null) {
+                                    // Check for url property
+                                    if (
+                                      firstImage.url &&
+                                      typeof firstImage.url === "string" &&
+                                      firstImage.url.trim() !== ""
+                                    ) {
+                                      return firstImage.url
+                                    }
+                                    // Check for secure_url property (Cloudinary format)
+                                    else if (
+                                      firstImage.secure_url &&
+                                      typeof firstImage.secure_url === "string" &&
+                                      firstImage.secure_url.trim() !== ""
+                                    ) {
+                                      return firstImage.secure_url
+                                    }
+                                  }
+                                }
+                                return "/placeholder.svg"
+                              })()
+                              const name = property.title || "Unnamed Property"
+                              const location = (() => {
+                                // Handle structured address object
+                                if (property.address && typeof property.address === 'object') {
+                                  const area = property.address.area || ''
+                                  const city = property.address.city || ''
+                                  if (area && city) return `${area}, ${city}`
+                                  if (city) return city
+                                  if (area) return area
+                                }
+                                // Fallback to individual fields
+                                const area = property.area || ''
+                                const city = property.city || ''
+                                if (area && city) return `${area}, ${city}`
+                                if (city) return city
+                                if (area) return area
+                                return "Unknown Location"
+                              })()
+                              const price = property.pricing?.pricePerBed || 0
+                              const rating = property.rating || 0
+                              return (
+                                <div
+                                  key={property._id}
+                                  className="group cursor-pointer"
+                                  onClick={() => {
+                                    if (!requireAuth('view-property', '/find-rooms')) return
+                                    router.push(`/property/${property._id}`)
+                                  }}
+                                >
+                                  {/* Image */}
+                                  <div className="relative w-full aspect-square mb-2">
+                                    <div className="relative w-full h-full rounded-xl overflow-hidden bg-gray-100">
+                                      {/* Heart Icon - Wishlist */}
+                                      <div className="absolute top-2 right-2 z-10">
+                                        <button
+                                          className={`w-6 h-6 rounded-full flex items-center justify-center backdrop-blur-sm transition-all duration-300 ${
+                                            isInWishlist(property._id)
+                                              ? "bg-red-500/90 shadow-lg"
+                                              : "bg-white/80 shadow-md"
+                                          }`}
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            toggleWishlist(property._id)
+                                          }}
+                                        >
+                                          <Heart
+                                            className={`w-3.5 h-3.5 transition-all duration-300 ${
+                                              isInWishlist(property._id)
+                                                ? "text-white fill-white"
+                                                : "text-gray-700"
+                                            }`}
+                                          />
+                                        </button>
+                                      </div>
+
+                                      {/* Loading indicator */}
+                                      {imageLoadingStates[property._id] && (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                                          <div className="w-5 h-5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin"></div>
+                                        </div>
+                                      )}
+
+                                      <Image
+                                        src={imageUrl || "/placeholder.svg"}
+                                        alt={name}
+                                        fill
+                                        className="object-cover"
+                                        onLoadingComplete={() => {
+                                          setImageLoadingStates((prev) => ({ ...prev, [property._id]: false }))
+                                        }}
+                                        onError={(e) => {
+                                          setImageLoadingStates((prev) => ({ ...prev, [property._id]: false }))
+                                          const target = e.target as HTMLImageElement
+                                          if (target.src !== "/placeholder.svg") {
+                                            target.src = "/placeholder.svg"
+                                          }
+                                        }}
+                                        onLoadStart={() => {
+                                          setImageLoadingStates((prev) => ({ ...prev, [property._id]: true }))
+                                        }}
+                                      />
+
+                                      {/* Fallback content when no image */}
+                                      {imageUrl === "/placeholder.svg" && (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                                          <div className="text-center text-gray-400">
+                                            <Building className="w-6 h-6 mx-auto mb-1" />
+                                            <p className="text-xs">No Image</p>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Content Below Image */}
+                                  <div className="space-y-1">
+                                    {/* Title and Rating */}
+                                    <div className="flex items-start justify-between gap-1">
+                                      <h3 className="font-medium text-gray-900 text-sm leading-tight line-clamp-1">
+                                        {name}
+                                      </h3>
+                                      {rating > 0 && (
+                                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                                          <span className="text-xs font-medium text-gray-700">{rating.toFixed(1)}</span>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Location */}
+                                    <p className="text-xs text-gray-500 line-clamp-1">{location}</p>
+
+                                    {/* Price */}
+                                    <div className="pt-0.5">
+                                      <span className="text-sm font-bold text-gray-900">₨{price.toLocaleString()}</span>
+                                      <span className="text-xs text-gray-500 ml-1">/month</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
                         </div>
                       </div>
                     )
@@ -1633,46 +1790,33 @@ function FindRoomsContent() {
         </div>
       </div>
 
-      {/* Bottom Navigation Bar - Mobile Only (compact, bottom-aligned) */}
+      {/* Bottom Navigation Bar - Mobile Only (improved styling with padding) */}
       <div
-        className="md:hidden fixed bottom-0 left-0 right-0 h-9 overflow-hidden bg-white border-t border-slate-200 z-40"
+        className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 shadow-lg"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="flex items-end justify-between h-full px-2 pb-1">
+        <div className="flex items-center justify-around px-6 py-3">
           {/* Home */}
           <button
             aria-label="Home"
             onClick={() => router.push("/find-rooms")}
-            className="w-9 h-9 flex items-center justify-center rounded-md"
+            className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-50 transition-colors"
             title="Home"
           >
             <Home className="w-5 h-5 text-slate-700" />
-            <span className="sr-only">Home</span>
-          </button>
-
-          {/* Property Types / Browse */}
-          <button
-            aria-label="Browse"
-            onClick={() => router.push("/find-rooms")}
-            className="w-9 h-9 flex items-center justify-center rounded-md"
-            title="Browse"
-          >
-            <Building className="w-5 h-5 text-slate-700" />
-            <span className="sr-only">Browse</span>
+            <span className="text-xs text-slate-600 mt-1">Home</span>
           </button>
 
           {/* Chat (toggle unified chat) */}
           <button
             aria-label="Chat"
             onClick={() => toggleChat()}
-            className="w-9 h-9 flex items-center justify-center rounded-md"
+            className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-50 transition-colors"
             title="Chat"
           >
             <MessageCircle className="w-5 h-5 text-emerald-600" />
-            <span className="sr-only">Chat</span>
+            <span className="text-xs text-emerald-600 mt-1">Chat</span>
           </button>
-
-      
 
           {/* Profile */}
           <div className="relative">
@@ -1681,10 +1825,10 @@ function FindRoomsContent() {
                 <SheetTrigger asChild>
                   <button
                     aria-label="Profile"
-                    className="w-9 h-9 flex items-center justify-center rounded-md"
+                    className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-50 transition-colors"
                     title="Profile"
                   >
-                    <Avatar className="w-7 h-7">
+                    <Avatar className="w-5 h-5">
                       <AvatarImage src={user.avatar || ""} alt={user.name} />
                       <AvatarFallback className="bg-emerald-100 text-emerald-600 text-xs font-semibold">
                         {user.name
@@ -1694,7 +1838,7 @@ function FindRoomsContent() {
                           .toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="sr-only">Profile</span>
+                    <span className="text-xs text-slate-600 mt-1">Profile</span>
                   </button>
                 </SheetTrigger>
                 <SheetContent side="right" className="w-80 p-0 bg-slate-50">
@@ -1775,11 +1919,11 @@ function FindRoomsContent() {
                 <SheetTrigger asChild>
                   <button
                     aria-label="Profile"
-                    className="w-9 h-9 flex items-center justify-center rounded-md"
+                    className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-50 transition-colors"
                     title="Profile"
                   >
                     <User className="w-5 h-5 text-slate-700" />
-                    <span className="sr-only">Profile</span>
+                    <span className="text-xs text-slate-600 mt-1">Profile</span>
                   </button>
                 </SheetTrigger>
                 <SheetContent side="right" className="w-80 p-0 bg-slate-50">
