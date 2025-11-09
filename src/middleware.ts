@@ -33,7 +33,9 @@ export default withAuth(
           '/login',
           '/signup',
           '/auth',
-          '/api/auth'
+          '/api/auth',
+          '/api/properties/verified',
+          '/api/properties/counts'
         ]
         
         const isPublicRoute = publicRoutes.some(route => 
