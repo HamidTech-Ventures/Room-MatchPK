@@ -540,8 +540,8 @@ function FindRoomsContent() {
                 <Logo size={65} showText={true} textSize="md" className="cursor-pointer" />
               </div>
 
-              {/* Center: Property Type quick filter - pill buttons, compact height */}
-              <div className="flex items-center space-x-1.5 bg-gray-200 rounded-lg p-1">
+              {/* Center: Property Type quick filter - amazing pill buttons with shadows */}
+              <div className="flex items-center space-x-2 bg-white/80 backdrop-blur-sm rounded-2xl p-2" style={{ boxShadow: '0 8px 25px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04)' }}>
                 {[
                   { id: "hostel", label: "Hostels", icon: "/Hostel.png" },
                   { id: "apartment", label: "Apartments", icon: "/apartment.png" },
@@ -553,20 +553,27 @@ function FindRoomsContent() {
                   return (
                     <Button
                       key={type.id}
-                      variant={isActive ? "default" : "ghost"}
+                      variant="ghost"
                       onClick={() => handlePropertyTypeChange(type.id)}
-                      className={`group relative flex items-center space-x-1 h-7 px-2.5 rounded-md whitespace-nowrap text-xs font-medium transition-all duration-200 ${isActive ? "bg-white text-emerald-600 shadow-sm" : "text-slate-600 hover:text-emerald-600 hover:bg-white/60"}`}
+                      className={`group relative flex items-center space-x-1.5 h-8 px-3 rounded-lg whitespace-nowrap text-xs font-medium transition-all duration-300 transform hover:scale-102 cursor-pointer ${isActive ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg hover:shadow-xl" : "text-slate-700 hover:text-emerald-600 hover:bg-white/90 shadow-md hover:shadow-lg"}`}
+                      style={{
+                        boxShadow: isActive 
+                          ? '0 8px 25px rgba(16, 185, 129, 0.4), 0 4px 12px rgba(16, 185, 129, 0.2)' 
+                          : '0 4px 15px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.05)'
+                      }}
                     >
-                      <Image
-                        src={type.icon || "/placeholder.svg"}
-                        alt={type.label + " icon"}
-                        width={12}
-                        height={12}
-                        className={`rounded object-contain ${isActive ? "" : "opacity-75"}`}
-                      />
-                      <span className="relative">
+                      <div className={`w-3.5 h-3.5 rounded-md overflow-hidden flex-shrink-0 ${isActive ? 'ring-1 ring-white/30' : ''}`}>
+                        <Image
+                          src={type.icon || "/placeholder.svg"}
+                          alt={type.label + " icon"}
+                          width={14}
+                          height={14}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <span className="relative font-semibold">
                         {type.label}
-                        <span className={`absolute -bottom-1 left-0 h-0.5 bg-emerald-500 transition-all duration-200 ${isActive ? "w-full" : "w-0 group-hover:w-full"}`}></span>
+                        <span className={`absolute -bottom-1 left-0 h-0.5 bg-white rounded-full transition-all duration-300 ${isActive ? "w-full opacity-100" : "w-0 opacity-0 group-hover:w-full group-hover:opacity-100"}`}></span>
                       </span>
                     </Button>
                   )
@@ -684,12 +691,12 @@ function FindRoomsContent() {
           </div>
         </nav>
 
-        {/* Desktop Search Bar Section (condensed) */}
+        {/* Desktop Search Bar Section (round with shadow) */}
         <div className="border-b border-emerald-100/30 bg-gray-50">
-          <div className="flex justify-center py-2">
-            <div className="bg-gray-200 rounded-lg p-1.5 shadow-sm flex items-center gap-2 w-fit">
+          <div className="flex justify-center py-3">
+            <div className="bg-white rounded-full p-2 flex items-center gap-3 w-fit" style={{ boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1), 0 5px 15px rgba(0, 0, 0, 0.05)' }}>
               <div className="flex items-center search-container relative">
-                <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 z-10" />
+                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
                 <Input
                   placeholder="Search hostels, cities, areas..."
                   value={filters.searchQuery}
@@ -707,15 +714,15 @@ function FindRoomsContent() {
                       setSelectedSuggestionIndex(-1)
                     }, 200)
                   }}
-                  className="pl-8 pr-14 h-8 border-emerald-100 text-slate-800 text-sm w-80 focus:ring-1 focus:ring-emerald-400 focus:border-emerald-300"
+                  className="pl-9 pr-14 h-9 border-0 text-slate-800 text-sm w-80 focus:ring-2 focus:ring-emerald-500 focus:bg-emerald-50/50 rounded-full bg-transparent transition-all duration-200"
                 />
 
                 <button
                   onClick={handleSearch}
-                  className="absolute right-7 top-1/2 -translate-y-1/2 flex items-center justify-center h-5 w-5 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full text-white hover:from-emerald-600 hover:to-emerald-700 z-10 transition-all duration-200 shadow-sm hover:shadow-md"
+                  className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center justify-center h-6 w-6 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full text-white hover:from-emerald-600 hover:to-emerald-700 z-10 transition-all duration-200 shadow-lg hover:shadow-xl"
                   aria-label="Search"
                 >
-                  <Search className="w-2.5 h-2.5" />
+                  <Search className="w-3 h-3" />
                 </button>
 
                 <button
@@ -723,10 +730,10 @@ function FindRoomsContent() {
                     if (!requireAuth('filter', '/find-rooms')) return
                     setShowFilters(true)
                   }}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center justify-center h-5 w-5 border border-emerald-200 rounded-full text-slate-600 hover:bg-emerald-50 hover:border-emerald-300 z-10 transition-all duration-200"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center justify-center h-6 w-6 bg-white border border-emerald-200 rounded-full text-slate-600 hover:bg-emerald-50 hover:border-emerald-300 z-10 transition-all duration-200 shadow-md hover:shadow-lg"
                   aria-label="Filters"
                 >
-                  <SlidersHorizontal className="w-2.5 h-2.5" />
+                  <SlidersHorizontal className="w-3 h-3" />
                 </button>
 
                 {showSuggestions && searchSuggestions.length > 0 && (
@@ -776,14 +783,15 @@ function FindRoomsContent() {
                   if (!requireAuth('wishlist', '/find-rooms')) return
                   setShowWishlist(!showWishlist)
                 }}
-                className={`flex items-center justify-center h-8 w-8 border rounded-full transition-all duration-200 ${
+                className={`flex items-center justify-center h-10 w-10 rounded-full transition-all duration-200 ${
                   showWishlist
-                    ? "border-red-500 bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md hover:shadow-lg"
-                    : "border-emerald-200 text-slate-600 hover:border-red-400 hover:text-red-500 hover:bg-red-50/80"
+                    ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg hover:shadow-xl"
+                    : "bg-white border border-emerald-200 text-slate-600 hover:border-red-400 hover:text-red-500 hover:bg-red-50/80 shadow-md hover:shadow-lg"
                 }`}
                 aria-label="Wishlist"
+                style={{ boxShadow: showWishlist ? '0 8px 25px rgba(239, 68, 68, 0.3), 0 4px 10px rgba(239, 68, 68, 0.15)' : '0 6px 20px rgba(0, 0, 0, 0.1), 0 3px 8px rgba(0, 0, 0, 0.05)' }}
               >
-                <Heart className={`w-3.5 h-3.5 ${showWishlist ? "fill-white" : ""}`} />
+                <Heart className={`w-4 h-4 ${showWishlist ? "fill-white" : ""}`} />
               </button>
             </div>
           </div>
@@ -808,7 +816,7 @@ function FindRoomsContent() {
                 onFocus={() => {
                   if (!requireAuth('search', '/find-rooms')) return
                 }}
-                className="w-full pl-10 pr-3 py-3 text-sm bg-white border-0 rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-lg hover:shadow-xl"
+                className="w-full pl-10 pr-3 py-3 text-sm bg-white border-0 rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-emerald-50/30 transition-all shadow-lg hover:shadow-xl"
                 style={{ boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05)' }}
               />
             </div>
@@ -845,12 +853,11 @@ function FindRoomsContent() {
           )}
         </div>
 
-        {/* Category Cards - Reduced Size */}
+        {/* Category Cards - Amazing Mobile Design */}
         <div className="px-4 pb-3">
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide">
             {[
               { id: "hostel", label: "Hostels", icon: "/Hostel.png" },
-
               { id: "apartment", label: "Apartments", icon: "/apartment.png" },
               { id: "house", label: "Homes", icon: "/house.png" },
               { id: "office", label: "Office", icon: "/office.jpg" },
@@ -864,21 +871,28 @@ function FindRoomsContent() {
                     if (!requireAuth('filter', '/find-rooms')) return
                     handleFilterChange("propertyType", isActive ? "" : category.id)
                   }}
-                  className={`flex-shrink-0 min-w-[65px] p-2 rounded-lg border-2 transition-all ${
-                    isActive ? "border-emerald-500 bg-emerald-50" : "border-gray-200 bg-white hover:border-emerald-300"
+                  className={`flex-shrink-0 min-w-[70px] p-3 rounded-2xl transition-all duration-300 transform hover:scale-102 cursor-pointer ${
+                    isActive 
+                      ? "bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg" 
+                      : "bg-white shadow-md hover:shadow-lg border border-gray-100"
                   }`}
+                  style={{
+                    boxShadow: isActive 
+                      ? '0 8px 25px rgba(16, 185, 129, 0.3), 0 4px 12px rgba(16, 185, 129, 0.15)' 
+                      : '0 6px 20px rgba(0, 0, 0, 0.08), 0 3px 10px rgba(0, 0, 0, 0.04)'
+                  }}
                 >
-                  <div className="flex flex-col items-center space-y-1">
-                    <div className="w-6 h-6 rounded-md overflow-hidden pointer-events-none">
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className={`w-7 h-7 rounded-xl overflow-hidden ${isActive ? 'ring-2 ring-white/40' : ''}`}>
                       <Image
                         src={category.icon || "/placeholder.svg"}
                         alt={category.label}
-                        width={24}
-                        height={24}
-                        className="w-full h-full object-cover pointer-events-none"
+                        width={28}
+                        height={28}
+                        className="w-full h-full object-cover"
                       />
                     </div>
-                    <span className={`text-xs font-medium ${isActive ? "text-emerald-700" : "text-gray-700"}`}>
+                    <span className={`text-xs font-semibold ${isActive ? "text-white" : "text-gray-700"}`}>
                       {category.label}
                     </span>
                   </div>
