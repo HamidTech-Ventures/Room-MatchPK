@@ -42,7 +42,10 @@ const COLLECTION_SCHEMAS: Record<string, CollectionSchema> = {
             pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'
           },
           name: { bsonType: 'string', minLength: 1 },
-          password: { bsonType: 'string' },
+          password: { 
+            bsonType: 'string',
+            description: 'Temporary keeping as required for compatibility'
+          },
           role: { 
             bsonType: 'string', 
             enum: ['student', 'owner', 'admin'] 
@@ -603,3 +606,6 @@ export async function checkDatabaseHealth(): Promise<{
 export function getCollection(db: Db, collectionName: keyof typeof COLLECTIONS) {
   return db.collection(COLLECTIONS[collectionName])
 }
+
+
+

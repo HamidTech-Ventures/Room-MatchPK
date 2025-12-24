@@ -23,6 +23,13 @@ async function verifyToken(request: NextRequest) {
   }
 }
 
+// Helper function to safely parse numbers
+function tryParseNumber(value: any): number | undefined {
+  if (value === undefined || value === null || value === '') return undefined
+  const num = Number(value)
+  return Number.isFinite(num) && num >= 0 ? num : undefined
+}
+
 // GET - Fetch all properties with filters
 export async function GET(request: NextRequest) {
   try {
@@ -77,7 +84,15 @@ export async function GET(request: NextRequest) {
     }
 
     if (genderPreference) {
-      filter.genderPreference = genderPreference;
+      // Handle both old and new gender preference values for backward compatibility
+      const genderMapping: { [key: string]: string[] } = {
+        'boys': ['boys', 'male'],
+        'girls': ['girls', 'female'],
+        'mixed': ['mixed']
+      }
+
+      const possibleValues = genderMapping[genderPreference] || [genderPreference]
+      filter.genderPreference = { $in: possibleValues }
     }
 
     if (minPrice || maxPrice) {
@@ -212,17 +227,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (user.role !== 'owner') {
+    // Allow both owners and students to create properties
+    if (!['owner', 'student'].includes(user.role)) {
       return NextResponse.json(
-        { success: false, error: 'Only property owners can create properties' },
+        { success: false, error: 'Only property owners and students can create properties' },
         { status: 403 }
       );
     }
 
     const body = await request.json();
 
-    // Validate required fields
-    const requiredFields = ['title', 'propertyType', 'address', 'pricing'];
+    // Validate required fields based on property type
+    const requiredFields = ['title', 'propertyType', 'address'];
+    
+    // Add pricing validation based on property type
+    if (body.propertyType === 'hostel-mess') {
+      if (!body.pricePerBed && !body.monthlyCharges && !body.pricing?.pricePerBed) {
+        return NextResponse.json(
+          { success: false, error: 'Monthly charges (pricePerBed) is required for mess properties' },
+          { status: 400 }
+        );
+      }
+    } else {
+      if (!body.monthlyRent && !body.pricePerBed && !body.pricing?.pricePerBed && !body.pricing?.monthlyRent) {
+        return NextResponse.json(
+          { success: false, error: 'Monthly rent or price per bed is required' },
+          { status: 400 }
+        );
+      }
+    }
+
     for (const field of requiredFields) {
       if (!body[field]) {
         return NextResponse.json(
@@ -240,39 +274,51 @@ export async function POST(request: NextRequest) {
     let availableRooms: number | undefined;
 
     if (body.totalRooms !== undefined && body.totalRooms !== null && body.totalRooms !== '') {
-      const parsed = parseInt(String(body.totalRooms));
-      if (!isNaN(parsed) && parsed >= 1) {
-        totalRooms = parsed;
-      }
+      totalRooms = tryParseNumber(body.totalRooms);
     }
 
     if (body.availableRooms !== undefined && body.availableRooms !== null && body.availableRooms !== '') {
-      const parsed = parseInt(String(body.availableRooms));
-      if (!isNaN(parsed) && parsed >= 0) {
-        availableRooms = parsed;
-      }
+      availableRooms = tryParseNumber(body.availableRooms);
     }
 
-    // Build property data object - only include fields that have valid values
+    // Get price from frontend form fields
+    let finalPrice: number | undefined
+    if (body.propertyType === 'hostel-mess') {
+      finalPrice = tryParseNumber(body.pricePerBed) || tryParseNumber(body.monthlyCharges) || tryParseNumber(body.pricing?.pricePerBed) || tryParseNumber(body.pricing?.monthlyCharges)
+    } else {
+      finalPrice = tryParseNumber(body.monthlyRent) || tryParseNumber(body.pricePerBed) || tryParseNumber(body.pricing?.pricePerBed) || tryParseNumber(body.pricing?.monthlyRent)
+    }
+
+    if (!finalPrice) {
+      return NextResponse.json(
+        { success: false, error: 'Valid pricing is required' },
+        { status: 400 }
+      )
+    }
+
+    // Build property data matching frontend form structure
     const propertyData: CreateDocument<Property> = {
-      title: body.title,
+      title: body.title || body.propertyName,
       description: body.description || '',
       ownerId: new ObjectId(user.id), // Use id from JWT
       propertyType: body.propertyType,
+      propertySubType: body.propertySubType,
       genderPreference: body.genderPreference,
       address: body.address,
       pricing: {
-        pricePerBed: Number(body.pricing.pricePerBed),
+        pricePerBed: finalPrice,
+        securityDeposit: tryParseNumber(body.securityDeposit) || tryParseNumber(body.pricing?.securityDeposit) || 0
       },
       amenities: body.amenities || [],
       images: body.images || [],
       roomDetails: body.roomDetails || [],
-      rules: body.rules || [],
+      rules: Array.isArray(body.rules) ? body.rules : (body.rules ? [body.rules] : []),
       contactInfo: body.contactInfo || {},
       tags: body.tags || [],
-      status: 'pending', // Default status for new properties
-      isActive: false, // Not active until approved
-      isVerified: false, // Admin needs to verify
+      nearbyUniversity: body.nearbyUniversity || '',
+      status: 'pending',
+      isActive: false,
+      isVerified: false,
       rating: 0,
       totalReviews: 0,
       cnicPicFront: body.cnicPicFront || '',
@@ -280,18 +326,46 @@ export async function POST(request: NextRequest) {
       ownerPic: body.ownerPic || '',
     };
 
+    // Add extra common fields
+    if (body.propertyName) propertyData.propertyName = body.propertyName;
+    if (body.country) propertyData.country = body.country;
+    if (body.province) propertyData.province = body.province;
+    if (body.city) propertyData.city = body.city;
+    if (body.area) propertyData.area = body.area;
+    if (body.mapLink) propertyData.mapLink = body.mapLink;
+    if (body.postalCode) propertyData.postalCode = body.postalCode;
+
+    // Add property type specific fields
+    if (body.propertyType === 'hostel-mess') {
+      // Mess-specific fields
+      propertyData.messName = body.messName || body.propertyName || body.title
+      propertyData.messType = body.messType
+      propertyData.monthlyCharges = finalPrice
+      propertyData.deliveryAvailable = body.deliveryAvailable || false
+      propertyData.deliveryCharges = body.deliveryCharges || ''
+      propertyData.coverageArea = body.coverageArea || ''
+      propertyData.trialAvailable = body.trialAvailable || false
+      propertyData.paymentOptions = body.paymentOptions || { cash: false, jazzcash: false, easypaisa: false }
+      propertyData.timings = body.timings || body.generalTimings || ''
+      propertyData.generalTimings = body.generalTimings || body.timings || ''
+    } else {
+      // Other property types
+      propertyData.monthlyRent = finalPrice
+      if (body.houseSize) propertyData.houseSize = body.houseSize
+      if (body.officeSize) propertyData.officeSize = body.officeSize
+      if (body.furnishingStatus) propertyData.furnishingStatus = body.furnishingStatus
+    }
+
     // Add optional pricing fields only if they have values
-    if (body.pricing.securityDeposit && !isNaN(Number(body.pricing.securityDeposit))) {
-      propertyData.pricing.securityDeposit = Number(body.pricing.securityDeposit);
+    if (body.pricing?.maintenanceCharges !== undefined && body.pricing.maintenanceCharges !== null) {
+      const mc = tryParseNumber(body.pricing.maintenanceCharges)
+      if (mc !== undefined) propertyData.pricing.maintenanceCharges = mc
     }
-    if (body.pricing.maintenanceCharges && !isNaN(Number(body.pricing.maintenanceCharges))) {
-      propertyData.pricing.maintenanceCharges = Number(body.pricing.maintenanceCharges);
+    if (body.pricing?.electricityCharges) {
+      propertyData.pricing.electricityCharges = body.pricing.electricityCharges
     }
-    if (body.pricing.electricityCharges) {
-      propertyData.pricing.electricityCharges = body.pricing.electricityCharges;
-    }
-    if (body.pricing.waterCharges) {
-      propertyData.pricing.waterCharges = body.pricing.waterCharges;
+    if (body.pricing?.waterCharges) {
+      propertyData.pricing.waterCharges = body.pricing.waterCharges
     }
 
     // Add optional fields only if they have values
@@ -302,33 +376,15 @@ export async function POST(request: NextRequest) {
       propertyData.nearbyUniversity = body.nearbyUniversity;
     }
     // Food service details
-    if (body.foodService) {
-      propertyData.foodService = body.foodService;
-    }
-    if (body.foodTimings) {
-      propertyData.foodTimings = body.foodTimings;
-    }
-    if (body.foodOptions) {
-      propertyData.foodOptions = body.foodOptions;
-    }
-    if (body.foodPricing) {
-      propertyData.foodPricing = body.foodPricing;
-    }
-    if (body.foodHygiene) {
-      propertyData.foodHygiene = body.foodHygiene;
-    }
-    if (body.foodStaff) {
-      propertyData.foodStaff = body.foodStaff;
-    }
-    if (body.foodCapacity) {
-      propertyData.foodCapacity = body.foodCapacity;
-    }
-    if (body.foodMenuRotation !== undefined) {
-      propertyData.foodMenuRotation = body.foodMenuRotation;
-    }
-    if (body.foodSpecialRequirements) {
-      propertyData.foodSpecialRequirements = body.foodSpecialRequirements;
-    }
+    if (body.foodService) propertyData.foodService = body.foodService;
+    if (body.foodTimings) propertyData.foodTimings = body.foodTimings;
+    if (body.foodOptions) propertyData.foodOptions = body.foodOptions;
+    if (body.foodPricing) propertyData.foodPricing = body.foodPricing;
+    if (body.foodHygiene) propertyData.foodHygiene = body.foodHygiene;
+    if (body.foodStaff) propertyData.foodStaff = body.foodStaff;
+    if (body.foodCapacity) propertyData.foodCapacity = body.foodCapacity;
+    if (body.foodMenuRotation !== undefined) propertyData.foodMenuRotation = body.foodMenuRotation;
+    if (body.foodSpecialRequirements) propertyData.foodSpecialRequirements = body.foodSpecialRequirements;
 
     // Validate room numbers logic
     if (totalRooms !== undefined && availableRooms !== undefined) {
@@ -341,14 +397,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Only add room numbers if they're valid
-    if (totalRooms !== undefined) {
-      propertyData.totalRooms = totalRooms;
-    }
-    if (availableRooms !== undefined) {
-      propertyData.availableRooms = availableRooms;
-    }
+    if (totalRooms !== undefined) propertyData.totalRooms = totalRooms;
+    if (availableRooms !== undefined) propertyData.availableRooms = availableRooms;
 
-    console.log('Property data being inserted:', JSON.stringify(propertyData, null, 2));
+    // Sanitized logging
+    const logData = {
+      ...propertyData,
+      cnicPicFront: propertyData.cnicPicFront ? '[REDACTED]' : '',
+      cnicPicBack: propertyData.cnicPicBack ? '[REDACTED]' : '',
+      ownerPic: propertyData.ownerPic ? '[REDACTED]' : '',
+    };
+    console.log('Property data being inserted:', JSON.stringify(logData, null, 2));
 
     // Temporarily bypass validation to allow property creation
     const result = await collection.insertOne(propertyData, { bypassDocumentValidation: true });

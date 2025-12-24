@@ -8,32 +8,23 @@ import { useSession } from "next-auth/react"
 import { Footer } from "@/components/footer"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
-// Simple Google Map embed component
+
 function PropertyMap({ address, mapLink }: { address: any; mapLink?: string }) {
-  // Renders a map for the given address or map link.
-  // Primary method: Use provided map link if available
-  // Fallback: Google Maps search iframe which doesn't require an API key.
   
   let src = '';
   
   if (mapLink) {
-    // If a map link is provided, try to convert it to an embeddable format
     if (mapLink.includes('google.com/maps')) {
-      // Convert Google Maps share link to embed format
       if (mapLink.includes('/place/') || mapLink.includes('/@')) {
-        // Extract coordinates or place info and create embed URL
         const embedUrl = mapLink.replace('/maps/', '/maps/embed?pb=').replace('?', '&')
         src = embedUrl
       } else {
-        // Fallback: add output=embed to regular Google Maps URLs
         src = mapLink.includes('output=embed') ? mapLink : `${mapLink}&output=embed`
       }
     } else {
-      // For non-Google Maps links, try to embed directly
       src = mapLink
     }
   } else if (address) {
-    // Fallback to address-based search
     const searchQuery = `${address.street || ''} ${address.area || ''} ${address.city || ''} Pakistan`.trim();
     const encodedQuery = encodeURIComponent(searchQuery);
     src = `https://www.google.com/maps?q=${encodedQuery}&output=embed`;
@@ -718,39 +709,10 @@ Thank you!`
                   </Badge>
                 )}
                 <span>
-                  {(() => {
-                    // Get available and total rooms with multiple fallbacks
-                    const available = propertyData.availableRooms || 
-                                    propertyData.roomsAvailable || 
-                                    propertyData.availability?.available || 
-                                    propertyData.rooms?.available
-                    
-                    const total = propertyData.totalRooms || 
-                                propertyData.roomsTotal || 
-                                propertyData.availability?.total || 
-                                propertyData.rooms?.total || 
-                                propertyData.capacity
-                    
-                    // If no room data available, show different message based on property type
-                    if (!available && !total) {
-                      if (propertyData.propertyType === "hostel-mess") {
-                        return "🍽️ Contact for availability"
-                      } else if (propertyData.propertyType === "apartment" || propertyData.propertyType === "house") {
-                        return "🏠 Available for rent"
-                      } else {
-                        return "🏠 Contact for availability"
-                      }
-                    }
-                    
-                    // If we have room data, show it
-                    const availableCount = available || 0
-                    const totalCount = total || availableCount || 1
-                    
-                    return propertyData.propertyType === "hostel-mess" ?
-                      `🍽️ ${availableCount} of ${totalCount} spots available` :
-                      `🏠 ${availableCount} of ${totalCount} rooms available`
-                  })()
-                }
+                  {propertyData.propertyType === "hostel-mess" ?
+                    `🍽️ ${propertyData.availableRooms || 0} of ${propertyData.totalRooms || 0} spots available` :
+                    `🏠 ${propertyData.availableRooms || 0} of ${propertyData.totalRooms || 0} rooms available`
+                  }
                 </span>
               </div>
             </div>
@@ -1360,19 +1322,7 @@ Thank you!`
                 <div className="text-center text-sm text-slate-600">
                   <div className="flex items-center justify-center space-x-1 mb-2">
                     <Clock className="w-4 h-4" />
-                    <span>🔥 {(() => {
-                      const available = propertyData.availableRooms || 
-                                      propertyData.roomsAvailable || 
-                                      propertyData.availability?.available || 
-                                      propertyData.rooms?.available
-                      
-                      if (!available) {
-                        return propertyData.propertyType === "apartment" || propertyData.propertyType === "house" ?
-                          "Available now" : "Contact for availability"
-                      }
-                      
-                      return `${available} rooms left`
-                    })()}</span>
+                    <span>🔥 {propertyData.availableRooms || 0} rooms left</span>
                   </div>
                   <span>Free cancellation within 24 hours</span>
                 </div>

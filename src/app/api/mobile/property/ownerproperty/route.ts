@@ -4,7 +4,7 @@ import { Property } from '@/lib/models'
 import { ObjectId } from 'mongodb'
 import jwt from 'jsonwebtoken'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret'
+const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your_jwt_secret'
 
 // Helper function to verify JWT token
 async function verifyToken(token: string) {
@@ -36,13 +36,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    if (user.role !== 'owner') {
-      return NextResponse.json(
-        { success: false, error: 'Only property owners can access this endpoint' },
-        { status: 403 }
-      )
-    }
-
+    // Allow any authenticated user to access their properties
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
@@ -142,13 +136,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    if (user.role !== 'owner') {
-      return NextResponse.json(
-        { success: false, error: 'Only property owners can update properties' },
-        { status: 403 }
-      )
-    }
-
+    // Allow any authenticated user to update their properties
     const body = await request.json()
     const { propertyId, ...updateData } = body
 
@@ -231,13 +219,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    if (user.role !== 'owner') {
-      return NextResponse.json(
-        { success: false, error: 'Only property owners can delete properties' },
-        { status: 403 }
-      )
-    }
-
+    // Allow any authenticated user to delete their properties
     const { searchParams } = new URL(request.url)
     const propertyId = searchParams.get('propertyId')
 

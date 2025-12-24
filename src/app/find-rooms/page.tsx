@@ -540,8 +540,8 @@ function FindRoomsContent() {
                 <Logo size={65} showText={true} textSize="md" className="cursor-pointer" />
               </div>
 
-              {/* Center: Property Type quick filter - amazing pill buttons with shadows */}
-              <div className="flex items-center space-x-2 bg-white/80 backdrop-blur-sm rounded-2xl p-2" style={{ boxShadow: '0 8px 25px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04)' }}>
+              {/* Center: Property Type quick filter - pill buttons, compact height */}
+              <div className="flex items-center space-x-1.5 bg-gray-200 rounded-lg p-1">
                 {[
                   { id: "hostel", label: "Hostels", icon: "/Hostel.png" },
                   { id: "apartment", label: "Apartments", icon: "/apartment.png" },
@@ -553,55 +553,46 @@ function FindRoomsContent() {
                   return (
                     <Button
                       key={type.id}
-                      variant="ghost"
+                      variant={isActive ? "default" : "ghost"}
                       onClick={() => handlePropertyTypeChange(type.id)}
-                      className={`group relative flex items-center space-x-1.5 h-8 px-3 rounded-lg whitespace-nowrap text-xs font-medium transition-all duration-300 transform hover:scale-102 cursor-pointer ${isActive ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg hover:shadow-xl" : "text-slate-700 hover:text-emerald-600 hover:bg-white/90 shadow-md hover:shadow-lg"}`}
-                      style={{
-                        boxShadow: isActive 
-                          ? '0 8px 25px rgba(16, 185, 129, 0.4), 0 4px 12px rgba(16, 185, 129, 0.2)' 
-                          : '0 4px 15px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.05)'
-                      }}
+                      className={`group relative flex items-center space-x-1 h-7 px-2.5 rounded-md whitespace-nowrap text-xs font-medium transition-all duration-200 ${isActive ? "bg-white text-emerald-600 shadow-sm" : "text-slate-600 hover:text-emerald-600 hover:bg-white/60"}`}
                     >
-                      <div className={`w-3.5 h-3.5 rounded-md overflow-hidden flex-shrink-0 ${isActive ? 'ring-1 ring-white/30' : ''}`}>
-                        <Image
-                          src={type.icon || "/placeholder.svg"}
-                          alt={type.label + " icon"}
-                          width={14}
-                          height={14}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <span className="relative font-semibold">
+                      <Image
+                        src={type.icon || "/placeholder.svg"}
+                        alt={type.label + " icon"}
+                        width={12}
+                        height={12}
+                        className={`rounded object-contain ${isActive ? "" : "opacity-75"}`}
+                      />
+                      <span className="relative">
                         {type.label}
-                        <span className={`absolute -bottom-1 left-0 h-0.5 bg-white rounded-full transition-all duration-300 ${isActive ? "w-full opacity-100" : "w-0 opacity-0 group-hover:w-full group-hover:opacity-100"}`}></span>
+                        <span className={`absolute -bottom-1 left-0 h-0.5 bg-emerald-500 transition-all duration-200 ${isActive ? "w-full" : "w-0 group-hover:w-full"}`}></span>
                       </span>
                     </Button>
                   )
                 })}
               </div>
 
-              {/* Right: Amazing Host CTA + profile positioned at center between search and nav */}
-              <div className="flex items-center space-x-4 flex-shrink-0" style={{ alignSelf: 'center', marginTop: '6px' }}>
+              {/* Right: Host CTA + compact profile */}
+              <div className="flex items-center space-x-2 flex-shrink-0">
                 <Link
                   href="/list-property"
-                  className="group relative flex items-center space-x-2 h-10 px-5 rounded-full font-medium text-sm transition-all duration-300 transform hover:scale-102 cursor-pointer bg-white/90 text-slate-700 hover:text-emerald-600 hover:bg-white shadow-md hover:shadow-lg border border-gray-200 hover:border-emerald-300"
-                  style={{ boxShadow: '0 6px 20px rgba(0, 0, 0, 0.1), 0 3px 10px rgba(0, 0, 0, 0.05)' }}
+                  className="text-slate-700 hover:text-emerald-600 font-medium flex items-center space-x-1 transition-all duration-200 text-xs px-2.5 py-1.5 rounded-lg hover:bg-emerald-50/80 border border-transparent hover:border-emerald-200"
                 >
-                  <Building className="w-4 h-4" />
-                  <span className="font-semibold">Become a Host</span>
+                  <Building className="w-3.5 h-3.5" />
+                  <span>Become a Host</span>
                 </Link>
 
                 <div className="relative profile-dropdown-container">
                   <Button
                     variant="ghost"
                     onClick={() => setShowProfile(!showProfile)}
-                    className="group relative h-10 w-10 rounded-full transition-all duration-300 transform hover:scale-102 cursor-pointer bg-white/90 hover:bg-white shadow-md hover:shadow-lg border border-gray-200 hover:border-emerald-300 p-0"
-                    style={{ boxShadow: '0 6px 20px rgba(0, 0, 0, 0.1), 0 3px 10px rgba(0, 0, 0, 0.05)' }}
+                    className="px-2 py-1.5 h-7 rounded-lg hover:bg-emerald-50/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-emerald-200"
                   >
                     {user ? (
-                      <Avatar className="w-7 h-7">
+                      <Avatar className="w-5 h-5">
                         <AvatarImage src={user.avatar || ""} alt={user.name} />
-                        <AvatarFallback className="bg-gradient-to-br from-emerald-100 to-emerald-200 text-emerald-700 text-sm font-semibold">
+                        <AvatarFallback className="bg-gradient-to-br from-emerald-100 to-emerald-200 text-emerald-700 text-xs font-semibold">
                           {user.name
                             ?.split(" ")
                             .map((n) => n[0])
@@ -610,7 +601,7 @@ function FindRoomsContent() {
                         </AvatarFallback>
                       </Avatar>
                     ) : (
-                      <User className="w-5 h-5 text-slate-600 group-hover:text-emerald-600" />
+                      <User className="w-3.5 h-3.5 text-slate-600" />
                     )}
                   </Button>
 
@@ -693,12 +684,12 @@ function FindRoomsContent() {
           </div>
         </nav>
 
-        {/* Desktop Search Bar Section (round with shadow) */}
+        {/* Desktop Search Bar Section (condensed) */}
         <div className="border-b border-emerald-100/30 bg-gray-50">
-          <div className="flex justify-center py-3">
-            <div className="bg-white rounded-full p-2 flex items-center gap-3 w-fit" style={{ boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1), 0 5px 15px rgba(0, 0, 0, 0.05)' }}>
+          <div className="flex justify-center py-2">
+            <div className="bg-gray-200 rounded-lg p-1.5 shadow-sm flex items-center gap-2 w-fit">
               <div className="flex items-center search-container relative">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 z-10" />
                 <Input
                   placeholder="Search hostels, cities, areas..."
                   value={filters.searchQuery}
@@ -716,15 +707,15 @@ function FindRoomsContent() {
                       setSelectedSuggestionIndex(-1)
                     }, 200)
                   }}
-                  className="pl-9 pr-14 h-9 border-0 text-slate-800 text-sm w-80 focus:ring-2 focus:ring-emerald-500 focus:bg-emerald-50/50 rounded-full bg-transparent transition-all duration-200"
+                  className="pl-8 pr-14 h-8 border-emerald-100 text-slate-800 text-sm w-80 focus:ring-1 focus:ring-emerald-400 focus:border-emerald-300"
                 />
 
                 <button
                   onClick={handleSearch}
-                  className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center justify-center h-6 w-6 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full text-white hover:from-emerald-600 hover:to-emerald-700 z-10 transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="absolute right-7 top-1/2 -translate-y-1/2 flex items-center justify-center h-5 w-5 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full text-white hover:from-emerald-600 hover:to-emerald-700 z-10 transition-all duration-200 shadow-sm hover:shadow-md"
                   aria-label="Search"
                 >
-                  <Search className="w-3 h-3" />
+                  <Search className="w-2.5 h-2.5" />
                 </button>
 
                 <button
@@ -732,10 +723,10 @@ function FindRoomsContent() {
                     if (!requireAuth('filter', '/find-rooms')) return
                     setShowFilters(true)
                   }}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center justify-center h-6 w-6 bg-white border border-emerald-200 rounded-full text-slate-600 hover:bg-emerald-50 hover:border-emerald-300 z-10 transition-all duration-200 shadow-md hover:shadow-lg"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center justify-center h-5 w-5 border border-emerald-200 rounded-full text-slate-600 hover:bg-emerald-50 hover:border-emerald-300 z-10 transition-all duration-200"
                   aria-label="Filters"
                 >
-                  <SlidersHorizontal className="w-3 h-3" />
+                  <SlidersHorizontal className="w-2.5 h-2.5" />
                 </button>
 
                 {showSuggestions && searchSuggestions.length > 0 && (
@@ -785,28 +776,27 @@ function FindRoomsContent() {
                   if (!requireAuth('wishlist', '/find-rooms')) return
                   setShowWishlist(!showWishlist)
                 }}
-                className={`flex items-center justify-center h-10 w-10 rounded-full transition-all duration-200 ${
+                className={`flex items-center justify-center h-8 w-8 border rounded-full transition-all duration-200 ${
                   showWishlist
-                    ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg hover:shadow-xl"
-                    : "bg-white border border-emerald-200 text-slate-600 hover:border-red-400 hover:text-red-500 hover:bg-red-50/80 shadow-md hover:shadow-lg"
+                    ? "border-red-500 bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md hover:shadow-lg"
+                    : "border-emerald-200 text-slate-600 hover:border-red-400 hover:text-red-500 hover:bg-red-50/80"
                 }`}
                 aria-label="Wishlist"
-                style={{ boxShadow: showWishlist ? '0 8px 25px rgba(239, 68, 68, 0.3), 0 4px 10px rgba(239, 68, 68, 0.15)' : '0 6px 20px rgba(0, 0, 0, 0.1), 0 3px 8px rgba(0, 0, 0, 0.05)' }}
               >
-                <Heart className={`w-4 h-4 ${showWishlist ? "fill-white" : ""}`} />
+                <Heart className={`w-3.5 h-3.5 ${showWishlist ? "fill-white" : ""}`} />
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Mobile Search Section - Round Design with Shadow */}
+      {/* Mobile Search Section - Single Clean Design */}
       <div className="md:hidden bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-sm border-b border-gray-200/30">
-        {/* Main Search Bar - Round with Shadow */}
+        {/* Main Search Bar - Reduced Size */}
         <div className="px-4 py-3">
           <div className="relative flex items-center gap-2">
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search hostels, city"
@@ -818,8 +808,7 @@ function FindRoomsContent() {
                 onFocus={() => {
                   if (!requireAuth('search', '/find-rooms')) return
                 }}
-                className="w-full pl-10 pr-3 py-3 text-sm bg-white border-0 rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-emerald-50/30 transition-all shadow-lg hover:shadow-xl"
-                style={{ boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05)' }}
+                className="w-full pl-8 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-colors"
               />
             </div>
             {/* Wishlist Button */}
@@ -828,21 +817,19 @@ function FindRoomsContent() {
                 if (!requireAuth('wishlist', '/find-rooms')) return
                 setShowWishlist(!showWishlist)
               }}
-              className={`p-3 rounded-full transition-all shadow-lg hover:shadow-xl ${
-                showWishlist ? "bg-red-500 hover:bg-red-600" : "bg-white hover:bg-gray-50"
+              className={`p-2 rounded-lg transition-colors ${
+                showWishlist ? "bg-red-500 hover:bg-red-600" : "bg-gray-200 hover:bg-gray-300"
               }`}
-              style={{ boxShadow: '0 6px 20px rgba(0, 0, 0, 0.1), 0 3px 8px rgba(0, 0, 0, 0.05)' }}
             >
               <Heart className={`w-4 h-4 ${showWishlist ? "text-white fill-white" : "text-gray-600"}`} />
             </button>
-            {/* Filter Button */}
+            {/* Filter Button - Reduced Size */}
             <button
               onClick={() => {
                 if (!requireAuth('filter', '/find-rooms')) return
                 setShowFilters(true)
               }}
-              className="p-3 bg-emerald-500 rounded-full hover:bg-emerald-600 transition-all shadow-lg hover:shadow-xl"
-              style={{ boxShadow: '0 6px 20px rgba(16, 185, 129, 0.3), 0 3px 8px rgba(16, 185, 129, 0.15)' }}
+              className="p-2 bg-emerald-500 rounded-lg hover:bg-emerald-600 transition-colors"
             >
               <SlidersHorizontal className="w-4 h-4 text-white" />
             </button>
@@ -855,11 +842,12 @@ function FindRoomsContent() {
           )}
         </div>
 
-        {/* Category Cards - Amazing Mobile Design */}
+        {/* Category Cards - Reduced Size */}
         <div className="px-4 pb-3">
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
             {[
               { id: "hostel", label: "Hostels", icon: "/Hostel.png" },
+
               { id: "apartment", label: "Apartments", icon: "/apartment.png" },
               { id: "house", label: "Homes", icon: "/house.png" },
               { id: "office", label: "Office", icon: "/office.jpg" },
@@ -873,28 +861,21 @@ function FindRoomsContent() {
                     if (!requireAuth('filter', '/find-rooms')) return
                     handleFilterChange("propertyType", isActive ? "" : category.id)
                   }}
-                  className={`flex-shrink-0 min-w-[70px] p-3 rounded-2xl transition-all duration-300 transform hover:scale-102 cursor-pointer ${
-                    isActive 
-                      ? "bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg" 
-                      : "bg-white shadow-md hover:shadow-lg border border-gray-100"
+                  className={`flex-shrink-0 min-w-[65px] p-2 rounded-lg border-2 transition-all ${
+                    isActive ? "border-emerald-500 bg-emerald-50" : "border-gray-200 bg-white hover:border-emerald-300"
                   }`}
-                  style={{
-                    boxShadow: isActive 
-                      ? '0 8px 25px rgba(16, 185, 129, 0.3), 0 4px 12px rgba(16, 185, 129, 0.15)' 
-                      : '0 6px 20px rgba(0, 0, 0, 0.08), 0 3px 10px rgba(0, 0, 0, 0.04)'
-                  }}
                 >
-                  <div className="flex flex-col items-center space-y-2">
-                    <div className={`w-7 h-7 rounded-xl overflow-hidden ${isActive ? 'ring-2 ring-white/40' : ''}`}>
+                  <div className="flex flex-col items-center space-y-1">
+                    <div className="w-6 h-6 rounded-md overflow-hidden pointer-events-none">
                       <Image
                         src={category.icon || "/placeholder.svg"}
                         alt={category.label}
-                        width={28}
-                        height={28}
-                        className="w-full h-full object-cover"
+                        width={24}
+                        height={24}
+                        className="w-full h-full object-cover pointer-events-none"
                       />
                     </div>
-                    <span className={`text-xs font-semibold ${isActive ? "text-white" : "text-gray-700"}`}>
+                    <span className={`text-xs font-medium ${isActive ? "text-emerald-700" : "text-gray-700"}`}>
                       {category.label}
                     </span>
                   </div>
@@ -1325,13 +1306,17 @@ function FindRoomsContent() {
                               </div>
                             </div>
                           </div>
-                          <button className="group flex items-center space-x-1.5 text-emerald-600 hover:text-emerald-700 font-medium text-xs transition-all duration-300 hover:bg-emerald-50 px-3 py-2 rounded-full border border-emerald-200 hover:border-emerald-300 hover:shadow-md">
-                            <span className="hidden sm:inline">View all in {city}</span>
-                            <span className="sm:hidden">View all</span>
-                            <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </button>
+                         {/* REPLACEMENT CODE: Changed button to Link */}
+<Link 
+  href={`/properties/${city.toLowerCase()}`} // This points to the page we created in Step 1
+  className="group flex items-center space-x-1.5 text-emerald-600 hover:text-emerald-700 font-medium text-xs transition-all duration-300 hover:bg-emerald-50 px-3 py-2 rounded-full border border-emerald-200 hover:border-emerald-300 hover:shadow-md"
+>
+  <span className="hidden sm:inline">View all in {city}</span>
+  <span className="sm:hidden">View all</span>
+  <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+  </svg>
+</Link>
                         </div>
 
                         {/* Properties Horizontal Scroll for this city - Airbnb Style */}
@@ -1380,10 +1365,10 @@ function FindRoomsContent() {
                             </svg>
                           </button>
 
-                          {/* Desktop Scroll container - Compact Airbnb Style */}
+                          {/* Scroll container - Compact Airbnb Style */}
                           <div
                             id={`scroll-${city}`}
-                            className="hidden md:flex overflow-x-auto scroll-smooth scrollbar-hide gap-4 py-2 px-1"
+                            className="flex overflow-x-auto scroll-smooth scrollbar-hide gap-4 py-2 px-1"
                             style={{ scrollSnapType: 'x mandatory' }}
                           >
                             {cityProperties.map((property: any) => {
@@ -1541,164 +1526,6 @@ function FindRoomsContent() {
                               )
                             })}
                           </div>
-
-                          {/* Mobile Horizontal Scroll - 2 cards visible */}
-                          <div className="md:hidden flex overflow-x-auto scroll-smooth scrollbar-hide gap-4 px-4" style={{ scrollSnapType: 'x mandatory' }}>
-                            {cityProperties.map((property: any) => {
-                              // Extract image URL properly - handle multiple formats
-                              const imageUrl = (() => {
-                                if (Array.isArray(property.images) && property.images.length > 0) {
-                                  const firstImage = property.images[0]
-
-                                  // Handle string URLs
-                                  if (typeof firstImage === "string" && firstImage.trim() !== "") {
-                                    return firstImage
-                                  }
-                                  // Handle object with url property
-                                  else if (typeof firstImage === "object" && firstImage !== null) {
-                                    // Check for url property
-                                    if (
-                                      firstImage.url &&
-                                      typeof firstImage.url === "string" &&
-                                      firstImage.url.trim() !== ""
-                                    ) {
-                                      return firstImage.url
-                                    }
-                                    // Check for secure_url property (Cloudinary format)
-                                    else if (
-                                      firstImage.secure_url &&
-                                      typeof firstImage.secure_url === "string" &&
-                                      firstImage.secure_url.trim() !== ""
-                                    ) {
-                                      return firstImage.secure_url
-                                    }
-                                  }
-                                }
-                                return "/placeholder.svg"
-                              })()
-                              const name = property.title || "Unnamed Property"
-                              const location = (() => {
-                                // Handle structured address object
-                                if (property.address && typeof property.address === 'object') {
-                                  const area = property.address.area || ''
-                                  const city = property.address.city || ''
-                                  if (area && city) return `${area}, ${city}`
-                                  if (city) return city
-                                  if (area) return area
-                                }
-                                // Fallback to individual fields
-                                const area = property.area || ''
-                                const city = property.city || ''
-                                if (area && city) return `${area}, ${city}`
-                                if (city) return city
-                                if (area) return area
-                                return "Unknown Location"
-                              })()
-                              const price = property.pricing?.pricePerBed || 0
-                              const rating = property.rating || 0
-                              return (
-                                <div
-                                  key={property._id}
-                                  className="flex-shrink-0 w-[calc(50vw-24px)] group cursor-pointer"
-                                  style={{ scrollSnapAlign: 'start' }}
-                                  onClick={() => {
-                                    if (!requireAuth('view-property', '/find-rooms')) return
-                                    router.push(`/property/${property._id}`)
-                                  }}
-                                >
-                                  {/* Image */}
-                                  <div className="relative w-full aspect-square mb-2">
-                                    <div className="relative w-full h-full rounded-xl overflow-hidden bg-gray-100">
-                                      {/* Heart Icon - Wishlist */}
-                                      <div className="absolute top-2 right-2 z-10">
-                                        <button
-                                          className={`w-6 h-6 rounded-full flex items-center justify-center backdrop-blur-sm transition-all duration-300 ${
-                                            isInWishlist(property._id)
-                                              ? "bg-red-500/90 shadow-lg"
-                                              : "bg-white/80 shadow-md"
-                                          }`}
-                                          onClick={(e) => {
-                                            e.stopPropagation()
-                                            toggleWishlist(property._id)
-                                          }}
-                                        >
-                                          <Heart
-                                            className={`w-3.5 h-3.5 transition-all duration-300 ${
-                                              isInWishlist(property._id)
-                                                ? "text-white fill-white"
-                                                : "text-gray-700"
-                                            }`}
-                                          />
-                                        </button>
-                                      </div>
-
-                                      {/* Loading indicator */}
-                                      {imageLoadingStates[property._id] && (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                                          <div className="w-5 h-5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin"></div>
-                                        </div>
-                                      )}
-
-                                      <Image
-                                        src={imageUrl || "/placeholder.svg"}
-                                        alt={name}
-                                        fill
-                                        className="object-cover"
-                                        onLoadingComplete={() => {
-                                          setImageLoadingStates((prev) => ({ ...prev, [property._id]: false }))
-                                        }}
-                                        onError={(e) => {
-                                          setImageLoadingStates((prev) => ({ ...prev, [property._id]: false }))
-                                          const target = e.target as HTMLImageElement
-                                          if (target.src !== "/placeholder.svg") {
-                                            target.src = "/placeholder.svg"
-                                          }
-                                        }}
-                                        onLoadStart={() => {
-                                          setImageLoadingStates((prev) => ({ ...prev, [property._id]: true }))
-                                        }}
-                                      />
-
-                                      {/* Fallback content when no image */}
-                                      {imageUrl === "/placeholder.svg" && (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                                          <div className="text-center text-gray-400">
-                                            <Building className="w-6 h-6 mx-auto mb-1" />
-                                            <p className="text-xs">No Image</p>
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {/* Content Below Image */}
-                                  <div className="space-y-1">
-                                    {/* Title and Rating */}
-                                    <div className="flex items-start justify-between gap-1">
-                                      <h3 className="font-medium text-gray-900 text-sm leading-tight line-clamp-1">
-                                        {name}
-                                      </h3>
-                                      {rating > 0 && (
-                                        <div className="flex items-center gap-0.5 flex-shrink-0">
-                                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                                          <span className="text-xs font-medium text-gray-700">{rating.toFixed(1)}</span>
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    {/* Location */}
-                                    <p className="text-xs text-gray-500 line-clamp-1">{location}</p>
-
-                                    {/* Price */}
-                                    <div className="pt-0.5">
-                                      <span className="text-sm font-bold text-gray-900">₨{price.toLocaleString()}</span>
-                                      <span className="text-xs text-gray-500 ml-1">/month</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
                         </div>
                       </div>
                     )
@@ -1810,33 +1637,46 @@ function FindRoomsContent() {
         </div>
       </div>
 
-      {/* Bottom Navigation Bar - Mobile Only (improved styling with padding) */}
+      {/* Bottom Navigation Bar - Mobile Only (compact, bottom-aligned) */}
       <div
-        className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 shadow-lg"
+        className="md:hidden fixed bottom-0 left-0 right-0 h-9 overflow-hidden bg-white border-t border-slate-200 z-40"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="flex items-center justify-around px-6 py-3">
+        <div className="flex items-end justify-between h-full px-2 pb-1">
           {/* Home */}
           <button
             aria-label="Home"
             onClick={() => router.push("/find-rooms")}
-            className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-50 transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-md"
             title="Home"
           >
             <Home className="w-5 h-5 text-slate-700" />
-            <span className="text-xs text-slate-600 mt-1">Home</span>
+            <span className="sr-only">Home</span>
+          </button>
+
+          {/* Property Types / Browse */}
+          <button
+            aria-label="Browse"
+            onClick={() => router.push("/find-rooms")}
+            className="w-9 h-9 flex items-center justify-center rounded-md"
+            title="Browse"
+          >
+            <Building className="w-5 h-5 text-slate-700" />
+            <span className="sr-only">Browse</span>
           </button>
 
           {/* Chat (toggle unified chat) */}
           <button
             aria-label="Chat"
             onClick={() => toggleChat()}
-            className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-50 transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-md"
             title="Chat"
           >
             <MessageCircle className="w-5 h-5 text-emerald-600" />
-            <span className="text-xs text-emerald-600 mt-1">Chat</span>
+            <span className="sr-only">Chat</span>
           </button>
+
+      
 
           {/* Profile */}
           <div className="relative">
@@ -1845,10 +1685,10 @@ function FindRoomsContent() {
                 <SheetTrigger asChild>
                   <button
                     aria-label="Profile"
-                    className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="w-9 h-9 flex items-center justify-center rounded-md"
                     title="Profile"
                   >
-                    <Avatar className="w-5 h-5">
+                    <Avatar className="w-7 h-7">
                       <AvatarImage src={user.avatar || ""} alt={user.name} />
                       <AvatarFallback className="bg-emerald-100 text-emerald-600 text-xs font-semibold">
                         {user.name
@@ -1858,7 +1698,7 @@ function FindRoomsContent() {
                           .toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-xs text-slate-600 mt-1">Profile</span>
+                    <span className="sr-only">Profile</span>
                   </button>
                 </SheetTrigger>
                 <SheetContent side="right" className="w-80 p-0 bg-slate-50">
@@ -1939,11 +1779,11 @@ function FindRoomsContent() {
                 <SheetTrigger asChild>
                   <button
                     aria-label="Profile"
-                    className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="w-9 h-9 flex items-center justify-center rounded-md"
                     title="Profile"
                   >
                     <User className="w-5 h-5 text-slate-700" />
-                    <span className="text-xs text-slate-600 mt-1">Profile</span>
+                    <span className="sr-only">Profile</span>
                   </button>
                 </SheetTrigger>
                 <SheetContent side="right" className="w-80 p-0 bg-slate-50">

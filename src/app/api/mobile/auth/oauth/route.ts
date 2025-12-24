@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { ObjectId } from 'mongodb';
 
 export async function POST(request: NextRequest) {
   try {
     // Parse request body
-    const { email, password } = await request.json();
+    const { email } = await request.json();
 
     // Validate input
-    if (!email || !password) {
+    if (!email) {
       return NextResponse.json(
-        { success: false, error: 'Email and password are required' },
+        { success: false, error: 'Email is required' },
         { status: 400 }
       );
     }
@@ -26,27 +25,16 @@ export async function POST(request: NextRequest) {
     if (!user) {
       console.log('User not found for email:', email);
       return NextResponse.json(
-        { success: false, error: 'Invalid email or password' },
-        { status: 401 }
+        { success: false, error: 'User not found' },
+        { status: 404 }
       );
     }
 
-    // Check if user is an OAuth user (no password or special OAuth marker)
-    if (!user.password || user.password === 'OAUTH_USER') {
-      // OAuth users should use the Google auth endpoint instead
+    // Check if user is an OAuth user (has provider field)
+    if (user.provider !== 'google' && user.provider !== 'both') {
       return NextResponse.json(
-        { success: false, error: 'OAuth users should sign in using Google authentication. Use /api/mobile/auth/googleauth endpoint instead.' },
-        { status: 401 }
-      );
-    }
-
-    // Verify password for non-OAuth users
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      console.log('Invalid password for user:', email);
-      return NextResponse.json(
-        { success: false, error: 'Invalid email or password' },
-        { status: 401 }
+        { success: false, error: 'This endpoint is only for OAuth users' },
+        { status: 400 }
       );
     }
 
@@ -54,7 +42,7 @@ export async function POST(request: NextRequest) {
     const tokenPayload = {
       id: user._id.toString(),
       email: user.email,
-      role: user.role || 'user',
+      role: user.role || 'student',
       name: user.name || '',
     };
 
@@ -67,21 +55,21 @@ export async function POST(request: NextRequest) {
     // Prepare response
     return NextResponse.json({
       success: true,
-      message: 'Login successful',
+      message: 'Token generated successfully',
       data: {
         token,
         user: {
           id: user._id.toString(),
           email: user.email,
           name: user.name || '',
-          role: user.role || 'user',
+          role: user.role || 'student',
         },
       },
     });
   } catch (error: any) {
-    console.error('Token signin error:', error.message, error.stack);
+    console.error('OAuth token generation error:', error.message, error.stack);
     return NextResponse.json(
-      { success: false, error: 'Authentication failed', details: error.message },
+      { success: false, error: 'Token generation failed', details: error.message },
       { status: 500 }
     );
   }

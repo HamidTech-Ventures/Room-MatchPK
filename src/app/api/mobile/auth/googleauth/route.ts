@@ -32,6 +32,7 @@ async function findOrCreateUser(email: string, name: string | undefined, intent:
   const newUserData: any = {
     email: email.toLowerCase(),
     name: name || 'Google User',
+    password: `GOOGLE_OAUTH_${Date.now()}`, // Unique placeholder for OAuth users
     role: defaultRole,
     provider: 'google',
     emailVerified: true
@@ -89,14 +90,19 @@ export async function POST(req: Request) {
 
     // Check user in DB
     let user = await findOrCreateUser(payload.email, payload.name, intent, payload.picture)
-    // Generate your own JWT for Flutter
+    // Generate JWT for Flutter
+    const jwtSecret = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET or NEXTAUTH_SECRET not configured')
+    }
+    
     const appToken = jwt.sign(
       {
         id: user.id,
         email: user.email,
         role: user.role,
       },
-      process.env.JWT_SECRET!,
+      jwtSecret,
       { expiresIn: "7d" }
     )
 

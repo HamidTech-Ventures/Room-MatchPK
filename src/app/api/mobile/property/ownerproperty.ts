@@ -3,6 +3,7 @@ import { getDatabase } from '@/lib/mongodb'
 import { Property } from '@/lib/models'
 import { ObjectId } from 'mongodb'
 import jwt from 'jsonwebtoken'
+import { deleteFromCloudinary, extractPublicId } from '@/lib/cloudinary'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret'
 
@@ -36,9 +37,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    if (user.role !== 'owner') {
+    if (!['owner', 'student'].includes(user.role)) {
       return NextResponse.json(
-        { success: false, error: 'Only property owners can access this endpoint' },
+        { success: false, error: 'Only property owners and students can access this endpoint' },
         { status: 403 }
       )
     }
@@ -142,9 +143,9 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    if (user.role !== 'owner') {
+    if (!['owner', 'student'].includes(user.role)) {
       return NextResponse.json(
-        { success: false, error: 'Only property owners can update properties' },
+        { success: false, error: 'Only property owners and students can update properties' },
         { status: 403 }
       )
     }
@@ -231,9 +232,9 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    if (user.role !== 'owner') {
+    if (!['owner', 'student'].includes(user.role)) {
       return NextResponse.json(
-        { success: false, error: 'Only property owners can delete properties' },
+        { success: false, error: 'Only property owners and students can delete properties' },
         { status: 403 }
       )
     }
@@ -251,22 +252,84 @@ export async function DELETE(request: NextRequest) {
     const db = await getDatabase()
     const collection = db.collection<Property>('properties')
 
-    // ❌ Soft delete → ✅ Hard delete (remove from DB)
-    const result = await collection.deleteOne({
+    // Find the property first to get image URLs
+    const property = await collection.findOne({
       _id: new ObjectId(propertyId),
-      ownerId: new ObjectId(user.id)  // only allow owner to delete their own property
+      ownerId: new ObjectId(user.id)
     })
 
-    if (result.deletedCount === 0) {
+    if (!property) {
       return NextResponse.json(
         { success: false, error: 'Property not found or access denied' },
         { status: 404 }
       )
     }
 
+    // Delete all images from Cloudinary before deleting the property
+    const imagesToDelete: string[] = []
+    
+    // Collect property images
+    if (property.images && Array.isArray(property.images)) {
+      property.images.forEach((image: any) => {
+        const url = typeof image === 'string' ? image : image?.url
+        if (url && typeof url === 'string') {
+          const publicId = extractPublicId(url)
+          if (publicId) {
+            imagesToDelete.push(publicId)
+          }
+        }
+      })
+    }
+    
+    // Collect owner document images
+    const ownerImageFields = ['cnicPicFront', 'cnicPicBack', 'ownerPic']
+    ownerImageFields.forEach(field => {
+      const imageUrl = (property as any)[field] as string | undefined
+      if (imageUrl && typeof imageUrl === 'string') {
+        const publicId = extractPublicId(imageUrl)
+        if (publicId) {
+          imagesToDelete.push(publicId)
+        }
+      }
+    })
+    
+    // Delete images from Cloudinary
+    console.log(`Deleting ${imagesToDelete.length} images from Cloudinary for property ${propertyId}`)
+    const deletePromises = imagesToDelete.map(async (publicId) => {
+      try {
+        return await deleteFromCloudinary(publicId)
+      } catch (error) {
+        console.error(`Error deleting image ${publicId}:`, error)
+        return false
+      }
+    })
+    
+    await Promise.allSettled(deletePromises)
+
+    // Delete all associated data from related collections
+    console.log(`Cleaning up all related data for property ${propertyId}`)
+    
+    const reviewsCollection = db.collection('reviews')
+    await reviewsCollection.deleteMany({ propertyId: new ObjectId(propertyId) })
+    
+    const bookingsCollection = db.collection('bookings')
+    await bookingsCollection.deleteMany({ propertyId: new ObjectId(propertyId) })
+    
+    const maintenanceCollection = db.collection('maintenanceRequests')
+    await maintenanceCollection.deleteMany({ propertyId: new ObjectId(propertyId) })
+    
+    const imagesCollection = db.collection('images')
+    await imagesCollection.deleteMany({ propertyId: new ObjectId(propertyId) })
+    
+    // Delete the property from database
+    const result = await collection.deleteOne({
+      _id: new ObjectId(propertyId),
+      ownerId: new ObjectId(user.id)
+    })
+
     return NextResponse.json({
       success: true,
-      message: 'Property deleted permanently'
+      message: 'Property and all associated data deleted permanently'
     })
 
   } catch (error) {

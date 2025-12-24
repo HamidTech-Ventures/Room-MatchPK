@@ -3,6 +3,37 @@ import { getDatabase } from '@/lib/mongodb'
 import { Property } from '@/lib/models'
 import { ObjectId } from 'mongodb'
 import { deleteFromCloudinary, extractPublicId } from '@/lib/cloudinary'
+import jwt from 'jsonwebtoken'
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret'
+
+async function getAuthUser(request: NextRequest) {
+  // 1. Try Session (for Web)
+  try {
+    const session = await (await import('next-auth')).getServerSession((await import('@/lib/auth-config')).authOptions)
+    if (session?.user) {
+      return { id: session.user.id, role: session.user.role }
+    }
+  } catch (e) {
+    console.log('Session check failed, trying Bearer token...')
+  }
+
+  // 2. Try Bearer Token (for Mobile)
+  try {
+    const authHeader = request.headers.get('Authorization')
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1]
+      const decoded = jwt.verify(token, JWT_SECRET) as { id: string; role: string }
+      if (decoded?.id) {
+        return { id: decoded.id, role: decoded.role }
+      }
+    }
+  } catch (e) {
+    console.error('JWT verification failed:', e)
+  }
+
+  return null
+}
 
 function extractIdFromUrl(url: string): string | null {
   // /api/properties/{id}
@@ -69,9 +100,9 @@ export async function PUT(request: NextRequest) {
         { status: 400 }
       )
     }
-    const session = await (await import('next-auth')).getServerSession((await import('@/lib/auth-config')).authOptions)
-    // Allow both owners and students to update their properties
-    if (!session?.user || !['owner', 'student'].includes(session.user.role)) {
+    const user = await getAuthUser(request)
+    
+    if (!user || !['owner', 'student'].includes(user.role)) {
       return NextResponse.json(
         { success: false, error: 'Only property owners and students can update properties' },
         { status: 403 }
@@ -100,7 +131,7 @@ export async function PUT(request: NextRequest) {
     const db = await getDatabase()
     const collection = db.collection<Property>('properties')
     // Verify ownership
-    const property = await collection.findOne({ _id: new ObjectId(id), ownerId: new ObjectId(session.user.id) })
+    const property = await collection.findOne({ _id: new ObjectId(id), ownerId: new ObjectId(user.id) })
     if (!property) {
       return NextResponse.json(
         { success: false, error: 'Property not found or access denied' },
@@ -179,9 +210,9 @@ export async function DELETE(request: NextRequest) {
         { status: 400 }
       )
     }
-    const session = await (await import('next-auth')).getServerSession((await import('@/lib/auth-config')).authOptions)
-    // Allow both owners and students to delete their properties
-    if (!session?.user || !['owner', 'student'].includes(session.user.role)) {
+    const user = await getAuthUser(request)
+    
+    if (!user || !['owner', 'student'].includes(user.role)) {
       return NextResponse.json(
         { success: false, error: 'Only property owners and students can delete properties' },
         { status: 403 }
@@ -190,7 +221,7 @@ export async function DELETE(request: NextRequest) {
     const db = await getDatabase()
     const collection = db.collection<Property>('properties')
     // Verify ownership
-    const property = await collection.findOne({ _id: new ObjectId(id), ownerId: new ObjectId(session.user.id) })
+    const property = await collection.findOne({ _id: new ObjectId(id), ownerId: new ObjectId(user.id) })
     if (!property) {
       return NextResponse.json(
         { success: false, error: 'Property not found or access denied' },

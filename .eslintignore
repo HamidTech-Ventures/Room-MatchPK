@@ -1,0 +1,32 @@
+# Ignore build outputs
+.next/
+node_modules/
+out/
+build/
+
+# Ignore specific file types
+*.log
+*.tsbuildinfo
+
+# Ignore generated files
+.env*
+.vercel/
+
+# Ignore test files (if you want)
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Ignore migration files or scripts
+/scripts/
+/migrations/
+
+# Ignore config files if needed
+# next.config.js
+# tailwind.config.js
+
+# Ignore specific problematic files (you can add more as needed)
+src/app/api/**/*.ts
+src/lib/mongodb.ts
+src/components/forms/**/*.tsx

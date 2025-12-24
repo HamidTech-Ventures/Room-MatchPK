@@ -113,11 +113,11 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Check if user is a student
-    if (!decodedToken || decodedToken.role !== 'student') {
+    // Allow all authenticated users to submit reviews (except property owners)
+    if (!decodedToken) {
       console.log('Unauthorized review submission attempt')
       return NextResponse.json(
-        { success: false, error: 'Only students can submit reviews' },
+        { success: false, error: 'Invalid token' },
         { status: 403 }
       )
     }

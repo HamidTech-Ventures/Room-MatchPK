@@ -34,6 +34,7 @@ export interface Property {
   ownerId: string | ObjectId
   propertyType: 'hostel' | 'apartment' | 'office' | 'pg' | 'flat' | 'house' | 'hostel-mess'
   propertySubType?: string
+  genderPreference?: string
 
   address: any // Flexible address structure from frontend
   location?: {

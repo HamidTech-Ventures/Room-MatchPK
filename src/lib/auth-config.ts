@@ -2,25 +2,16 @@ import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 import { authenticateUser, findUserByEmail, createUser, initializeDefaultAdmin } from './auth'
-import { validateRedirectUrl, validateEnvironmentVariables, SECURITY_CONFIG } from './security-config'
 
-// Secure URL validation
+// Dynamic NEXTAUTH_URL based on environment
 const getNextAuthUrl = () => {
-  const url = process.env.NEXTAUTH_URL || 'http://localhost:3000'
-  // Validate URL format
-  try {
-    new URL(url)
-    return url
-  } catch {
-    console.error('Invalid NEXTAUTH_URL format')
-    return 'http://localhost:3000'
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`
   }
-}
-
-// Validate environment on startup
-const envValidation = validateEnvironmentVariables()
-if (!envValidation.isValid) {
-  console.error('Missing required environment variables:', envValidation.missing)
+  if (process.env.NEXTAUTH_URL) {
+    return process.env.NEXTAUTH_URL
+  }
+  return 'http://localhost:3000'
 }
 
 export const authOptions: NextAuthOptions = {
@@ -33,15 +24,14 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          console.warn('Authentication attempt with missing credentials')
-          return null
+          throw new Error('EMAIL_PASSWORD_REQUIRED')
         }
 
         try {
           // Check if MongoDB is configured
           if (!process.env.MONGODB_URI) {
-            console.error('MongoDB not configured, authentication disabled')
-            return null
+            console.warn('MongoDB not configured, authentication disabled')
+            throw new Error('DATABASE_NOT_CONFIGURED')
           }
 
           // Initialize default admin if not exists
@@ -59,12 +49,9 @@ export const authOptions: NextAuthOptions = {
           }
           return null
         } catch (error: any) {
-          console.error('Authentication error:', {
-            email: credentials.email,
-            error: error.message,
-            timestamp: new Date().toISOString()
-          })
-          return null
+          console.error('Authentication error:', error)
+          // Re-throw the error so it can be handled by the client
+          throw new Error(error.message || 'AUTHENTICATION_FAILED')
         }
       }
     }),
@@ -84,7 +71,6 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: 'jwt' as const,
-    maxAge: SECURITY_CONFIG.SESSION_MAX_AGE,
   },
   callbacks: {
     async jwt({ token, user, account }) {
@@ -99,7 +85,7 @@ export const authOptions: NextAuthOptions = {
         try {
           // Check if MongoDB is configured
           if (!process.env.MONGODB_URI) {
-            console.error('MongoDB not configured for OAuth')
+            console.warn('MongoDB not configured, using default user data')
             token.role = 'student'
             token.id = user.id || ''
             return token
@@ -108,10 +94,11 @@ export const authOptions: NextAuthOptions = {
           const existingUser = await findUserByEmail(user.email!)
           if (!existingUser) {
             // Create new user from Google OAuth
-            console.info('Creating new user from Google OAuth')
+            console.log('Creating new user from Google OAuth:', user.email)
             const newUser = await createUser({
               email: user.email!,
               name: user.name!,
+              password: `GOOGLE_OAUTH_${Date.now()}`,
               role: 'student',
               provider: 'google',
               googleId: user.id,
@@ -123,7 +110,7 @@ export const authOptions: NextAuthOptions = {
               token.role = newUser.role
               token.id = newUser._id?.toString() || ''
               token.isNewUser = true // Mark as new user for callback handling
-              console.info('New Google user created successfully')
+              console.log('New Google user created successfully:', newUser.email)
             } else {
               // User already exists, find them
               const existingUser = await findUserByEmail(user.email!)
@@ -131,14 +118,14 @@ export const authOptions: NextAuthOptions = {
                 token.role = existingUser.role
                 token.id = existingUser._id?.toString() || ''
                 token.isNewUser = false
-                console.info('Google user already exists')
+                console.log('Google user already exists:', existingUser.email)
               }
             }
           } else {
             // Check if existing user has different provider
             if (existingUser.provider !== 'google' && existingUser.provider !== 'both') {
               // Update user to support both providers
-              console.info('Linking Google account to existing user')
+              console.log('Linking Google account to existing user:', existingUser.email)
               const db = await (await import('./mongodb')).getDatabase()
               await db.collection('users').updateOne(
                 { email: user.email },
@@ -156,14 +143,13 @@ export const authOptions: NextAuthOptions = {
             token.role = existingUser.role
             token.id = existingUser._id?.toString() || ''
             token.isNewUser = false
-            console.info('Google login successful for existing user')
+            console.log('Google login successful for existing user:', existingUser.email)
           }
         } catch (error) {
-          console.error('Error handling Google OAuth user:', {
-            error: error instanceof Error ? error.message : 'Unknown error',
-            timestamp: new Date().toISOString()
-          })
-          return token // Return token instead of throwing to prevent auth failure
+          console.error('❌ Error handling Google OAuth user:', error)
+          console.error('Error details:', error)
+          // Throw the error to trigger the error page
+          throw new Error(`Google OAuth processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
         }
       }
       
@@ -178,24 +164,25 @@ export const authOptions: NextAuthOptions = {
       return session
     },
     async signIn({ user, account, profile, email, credentials }) {
-      console.info('SignIn callback triggered:', {
+      console.log('🔐 SignIn callback triggered:', {
         provider: account?.provider,
-        hasEmail: !!user.email
+        email: user.email,
+        userId: user.id
       })
 
       // Handle Google OAuth sign-in validation
       if (account?.provider === 'google') {
         try {
-          console.info('Processing Google OAuth sign-in')
+          console.log('🔍 Processing Google OAuth sign-in for:', user.email)
 
           // Check if MongoDB is configured
           if (!process.env.MONGODB_URI) {
-            console.error('MongoDB not configured, denying Google sign-in')
-            return false
+            console.warn('⚠️ MongoDB not configured, allowing Google sign-in')
+            return true
           }
 
           const existingUser = await findUserByEmail(user.email!)
-          console.info('Existing user check result:', existingUser ? 'Found' : 'Not found')
+          console.log('👤 Existing user check result:', existingUser ? 'Found' : 'Not found')
 
           // Check the callback URL to determine intent
           // Note: We'll handle intent checking in the callback page instead
@@ -203,58 +190,43 @@ export const authOptions: NextAuthOptions = {
 
           // If user exists with credentials only, allow them to link Google account
           if (existingUser && existingUser.provider === 'credentials') {
-            console.info('User exists with credentials, will link Google account')
+            console.log('🔗 User exists with credentials, will link Google account')
             return true
           }
 
           // If user doesn't exist, they will be created in the jwt callback
           if (!existingUser) {
-            console.info('New Google user, will create account')
+            console.log('✨ New Google user, will create account')
             return true
           }
 
           // User exists with Google or both providers
-          console.info('Existing Google user, allowing sign-in')
+          console.log('✅ Existing Google user, allowing sign-in')
           return true
         } catch (error) {
-          console.error('Error in signIn callback:', {
-            error: error instanceof Error ? error.message : 'Unknown error',
-            timestamp: new Date().toISOString()
-          })
+          console.error('❌ Error in signIn callback:', error)
+          // Return false to show error page instead of proceeding
           return false
         }
       }
       return true
     },
     async redirect({ url, baseUrl }) {
-      console.info('NextAuth redirect callback')
-      
-      // Validate URLs to prevent open redirect attacks
-      const isValidUrl = (testUrl: string) => {
-        try {
-          const parsed = new URL(testUrl, baseUrl)
-          return parsed.origin === new URL(baseUrl).origin
-        } catch {
-          return false
-        }
-      }
-      
-      // If this is an OAuth callback, let NextAuth handle it
+      // Allow OAuth callback URLs
       if (url.includes('/api/auth/callback')) {
         return url
       }
       
-      // Only allow same-origin redirects
+      // Redirect to custom callback page
+      if (url.startsWith(baseUrl)) {
+        return url
+      }
+      
       if (url.startsWith('/')) {
         return `${baseUrl}${url}`
       }
       
-      if (isValidUrl(url)) {
-        return url
-      }
-      
-      // Default safe redirect
-      return baseUrl
+      return `${baseUrl}/auth/callback`
     }
   },
   pages: {
@@ -262,5 +234,5 @@ export const authOptions: NextAuthOptions = {
     error: '/auth/error'
   },
   debug: process.env.NODE_ENV === 'development', // Enable debug in development
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-for-development-only',
 }
