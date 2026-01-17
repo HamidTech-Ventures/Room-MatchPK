@@ -529,6 +529,7 @@ function FindRoomsContent() {
 
   return (
     <div className="min-h-screen bg-white pb-9 md:pb-0">
+      {/* Mobile Search Section*/}
       {/* Desktop sticky header */}
       <div className="hidden md:block sticky top-0 z-50 bg-gray-50 backdrop-blur-md border-b border-emerald-100/50 shadow-sm transition-all duration-300">
         {/* Compact, attractive Navbar for Find Rooms (desktop only) */}
@@ -790,94 +791,100 @@ function FindRoomsContent() {
         </div>
       </div>
 
-      {/* Mobile Search Section - Single Clean Design */}
-      <div className="md:hidden bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-sm border-b border-gray-200/30">
-        {/* Main Search Bar - Reduced Size */}
-        <div className="px-4 py-3">
-          <div className="relative flex items-center gap-2">
-            <div className="flex-1 relative">
-              <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search hostels, city"
-                value={filters.searchQuery}
-                onChange={(e) => {
-                  if (!requireAuth('search', '/find-rooms')) return
-                  handleFilterChange("searchQuery", e.target.value)
-                }}
-                onFocus={() => {
-                  if (!requireAuth('search', '/find-rooms')) return
-                }}
-                className="w-full pl-8 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-colors"
-              />
+      {/* Mobile Search Section - App Like Design */}
+      <div className="md:hidden bg-white sticky top-0 z-50 pb-2">
+        {/* Main Search Bar - Pill Shape with Shadow */}
+        <div className="px-4 pt-4 pb-2 bg-white">
+          <div className="relative flex items-center w-full h-12 rounded-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.12)] border border-gray-100 px-4 transition-all active:scale-[0.98]">
+            
+            {/* Search Icon */}
+            <div className="flex-shrink-0 mr-3">
+              <Search className="w-5 h-5 text-gray-800 stroke-[2.5]" />
             </div>
-            {/* Wishlist Button */}
-            <button
-              onClick={() => {
-                if (!requireAuth('wishlist', '/find-rooms')) return
-                setShowWishlist(!showWishlist)
+
+            {/* Input Field */}
+            <input
+              type="text"
+              placeholder="Start your search"
+              value={filters.searchQuery}
+              onChange={(e) => {
+                if (!requireAuth('search', '/find-rooms')) return
+                handleFilterChange("searchQuery", e.target.value)
               }}
-              className={`p-2 rounded-lg transition-colors ${
-                showWishlist ? "bg-red-500 hover:bg-red-600" : "bg-gray-200 hover:bg-gray-300"
-              }`}
-            >
-              <Heart className={`w-4 h-4 ${showWishlist ? "text-white fill-white" : "text-gray-600"}`} />
-            </button>
-            {/* Filter Button - Reduced Size */}
+              onFocus={() => {
+                if (!requireAuth('search', '/find-rooms')) return
+              }}
+              className="flex-1 w-full bg-transparent border-none outline-none text-sm font-medium text-gray-900 placeholder:text-gray-800 placeholder:font-semibold h-full"
+            />
+
+            {/* Filter Button (Inside Bar) */}
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation() // Prevent input focus if clicking filter
                 if (!requireAuth('filter', '/find-rooms')) return
                 setShowFilters(true)
               }}
-              className="p-2 bg-emerald-500 rounded-lg hover:bg-emerald-600 transition-colors"
+              className="flex-shrink-0 ml-2 p-2 rounded-full hover:bg-gray-100 transition-colors"
             >
-              <SlidersHorizontal className="w-4 h-4 text-white" />
+              <div className="p-1.5 border border-gray-300 rounded-full">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-gray-800 stroke-[2.5]" />
+              </div>
             </button>
           </div>
-          {/* Wishlist count indicator */}
-          {wishlist.length > 0 && (
-            <div className="mt-2 text-xs text-gray-600">
-              {wishlist.length} item{wishlist.length !== 1 ? "s" : ""} in wishlist
-            </div>
-          )}
         </div>
 
-        {/* Category Cards - Reduced Size */}
-        <div className="px-4 pb-3">
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+        {/* Category Cards - Kept identical but slightly adjusted spacing */}
+        <div className="px-4 pb-2">
+          {/* Added 'justify-between' for better spacing matching the app */}
+          <div className="flex justify-between items-start gap-2 overflow-x-auto scrollbar-hide py-2">
             {[
+              // Reordered to match App Image (Home is usually first)
+              { id: "house", label: "Home", icon: "/home (2).png" },
               { id: "hostel", label: "Hostels", icon: "/Hostel.png" },
-
-              { id: "apartment", label: "Apartments", icon: "/apartment.png" },
-              { id: "house", label: "Homes", icon: "/house.png" },
-              { id: "office", label: "Office", icon: "/office.jpg" },
-              { id: "hostel-mess", label: "Mess", icon: "/mess.png" },
+              { id: "apartment", label: "Apartments", icon: "/aparment.png" },
+              { id: "office", label: "Office", icon: "/office.png" },
+              { id: "hostel-mess", label: "Mess", icon: "/food 2.png" },
             ].map((category) => {
-              const isActive = filters.propertyType === category.id
+              const isActive = filters.propertyType === category.id || (category.id === 'house' && !filters.propertyType);
+              
               return (
                 <button
                   key={category.id}
                   onClick={() => {
                     if (!requireAuth('filter', '/find-rooms')) return
-                    handleFilterChange("propertyType", isActive ? "" : category.id)
+                    handleFilterChange("propertyType", category.id)
                   }}
-                  className={`flex-shrink-0 min-w-[65px] p-2 rounded-lg border-2 transition-all ${
-                    isActive ? "border-emerald-500 bg-emerald-50" : "border-gray-200 bg-white hover:border-emerald-300"
-                  }`}
+                  // REMOVED: border, border-gray-100, bg-white, shadow-sm, rounded-xl
+                  // ADDED: Simple flex column layout
+                  className="group flex flex-col items-center gap-1 min-w-[64px] focus:outline-none"
                 >
-                  <div className="flex flex-col items-center space-y-1">
-                    <div className="w-6 h-6 rounded-md overflow-hidden pointer-events-none">
+                  {/* Icon Container - Clean, no border */}
+                  <div className="relative w-12 h-12 flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
+                    <div className="relative w-10 h-10">
                       <Image
                         src={category.icon || "/placeholder.svg"}
                         alt={category.label}
-                        width={24}
-                        height={24}
-                        className="w-full h-full object-cover pointer-events-none"
+                        fill
+                        className="object-contain"
+                        priority
                       />
                     </div>
-                    <span className={`text-xs font-medium ${isActive ? "text-emerald-700" : "text-gray-700"}`}>
+                  </div>
+
+                  {/* Label & Active Indicator */}
+                  <div className="flex flex-col items-center w-full">
+                    <span className={`
+                      text-xs font-medium transition-colors duration-200
+                      ${isActive ? "text-emerald-600" : "text-gray-500 group-hover:text-gray-700"}
+                    `}>
                       {category.label}
                     </span>
+                    
+                    {/* The Green Underline (Matches App Active State) */}
+                    <span className={`
+                      h-[3px] rounded-full bg-emerald-500 transition-all duration-300 mt-1
+                      ${isActive ? "w-8 opacity-100" : "w-0 opacity-0"}
+                    `}></span>
                   </div>
                 </button>
               )
@@ -1654,17 +1661,28 @@ function FindRoomsContent() {
             <span className="sr-only">Home</span>
           </button>
 
-          {/* Property Types / Browse */}
-          <button
-            aria-label="Browse"
-            onClick={() => router.push("/find-rooms")}
-            className="w-9 h-9 flex items-center justify-center rounded-md"
-            title="Browse"
-          >
-            <Building className="w-5 h-5 text-slate-700" />
-            <span className="sr-only">Browse</span>
-          </button>
-
+        {/* Wishlist - ELEVATED ICON */}
+          <div className="relative">
+            <button
+              aria-label="Wishlist"
+              onClick={() => {
+                if (!requireAuth('wishlist', '/find-rooms')) return
+                setShowWishlist(!showWishlist)
+              }}
+              className={`
+                relative mb-10 w-14 h-14 rounded-full flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-gray-100 transition-all duration-300
+                ${showWishlist ? "bg-emerald-600 text-white" : "bg-white text-gray-400 hover:text-emerald-600"}
+              `}
+            >
+              <Heart className={`w-6 h-6 ${showWishlist ? "fill-white" : ""}`} />
+              
+              {/* Optional: Small badge or label could go here, but usually cleaner without for floating buttons */}
+            </button>
+            {/* Label for Wishlist (Optional: sits on the line) */}
+            <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-medium ${showWishlist ? "text-emerald-600" : "text-gray-500"}`}>
+              Wishlist
+            </span>
+          </div>
           {/* Chat (toggle unified chat) */}
           <button
             aria-label="Chat"

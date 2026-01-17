@@ -21,13 +21,10 @@ import {
   MessageCircle, 
   Home, 
   Building, 
-  X,
-  ChevronLeft,
-  ChevronRight
+  X
 } from "lucide-react"
 
 // --- Import your custom components here ---
-// Assuming these paths based on your previous code
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -43,13 +40,6 @@ import { useAuthGuard } from "@/hooks/use-auth-guard"
 import { Logo } from "@/components/logo"
 import { AuthLoading } from "@/components/auth-loading"
 import { UnifiedChat } from "@/components/unified-chat"
-
-// Helper for safe logging
-const safeLog = (...args: any[]) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.log(...args)
-  }
-}
 
 export default function CityPropertiesPage() {
   // 1. Core Hooks
@@ -69,9 +59,6 @@ export default function CityPropertiesPage() {
   const [showProfile, setShowProfile] = useState(false)
   const [showMobileProfileSheet, setShowMobileProfileSheet] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
-  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([])
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1)
   
   // 4. Data State
   const [properties, setProperties] = useState<any[]>([])
@@ -81,7 +68,7 @@ export default function CityPropertiesPage() {
   const [pagination, setPagination] = useState({ page: 1, limit: 12, total: 0, pages: 1 })
   const [imageLoadingStates, setImageLoadingStates] = useState<{ [key: string]: boolean }>({})
 
-  // 5. Filters State (Using basic useState here to avoid conflicting with the main page's local storage)
+  // 5. Filters State
   const [filters, setFilters] = useState({
     propertyType: searchParams.get("propertyType") || "",
     genderPreference: "",
@@ -142,14 +129,11 @@ export default function CityPropertiesPage() {
     async function fetchProperties() {
       setLoading(true)
       try {
-        // Construct Query Params
         const apiParams = new URLSearchParams({
           page: pagination.page.toString(),
-          limit: "50", // Fetch enough for the 6-col grid
+          limit: "50",
         })
 
-        // IMPORTANT: Always include the CITY in the search
-        // If user types a specific area (e.g. "DHA"), we combine: "Lahore DHA"
         const effectiveSearch = filters.searchQuery 
           ? `${city} ${filters.searchQuery}` 
           : city
@@ -159,7 +143,6 @@ export default function CityPropertiesPage() {
         if (filters.propertyType) apiParams.append("propertyType", filters.propertyType)
         if (filters.genderPreference) apiParams.append("genderPreference", filters.genderPreference)
         
-        // Price params
         if (filters.priceRange[0] > 0 || filters.priceRange[1] < 999999) {
           apiParams.append("minPrice", filters.priceRange[0].toString())
           apiParams.append("maxPrice", filters.priceRange[1].toString())
@@ -177,12 +160,9 @@ export default function CityPropertiesPage() {
         
         const data = await res.json()
         
-        // Optional Client-side strict filtering to ensure City matches 
-        // (Only if API fuzzy search is too loose)
         let finalProperties = data.properties || []
         
         if (filters.searchQuery === "" && city !== "All Locations") {
-           // If user hasn't typed a specific search, strictly enforce city filter on client side as backup
            finalProperties = finalProperties.filter((p: any) => 
              p.address?.city?.toLowerCase().includes(city.toLowerCase()) || 
              p.city?.toLowerCase().includes(city.toLowerCase())
@@ -204,13 +184,12 @@ export default function CityPropertiesPage() {
     }
   }, [pagination.page, filters, city])
 
-  // --- Render ---
   const wishlistProperties = properties.filter((property) => wishlist.includes(property._id))
 
   return (
     <div className="min-h-screen bg-white pb-9 md:pb-0">
       
-      {/* 1. DESKTOP NAVBAR (Identical to Find Rooms) */}
+      {/* 1. DESKTOP NAVBAR */}
       <div className="hidden md:block sticky top-0 z-50 bg-gray-50 backdrop-blur-md border-b border-emerald-100/50 shadow-sm transition-all duration-300">
         <nav>
           <div className="max-w-[1800px] mx-auto px-4 lg:px-6">
@@ -329,44 +308,73 @@ export default function CityPropertiesPage() {
         </div>
       </div>
 
-      {/* 2. MOBILE HEADER */}
-      <div className="md:hidden bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-sm border-b border-gray-200/30">
-        <div className="px-4 py-3">
-          <div className="relative flex items-center gap-2">
-            <div className="flex-1 relative">
-              <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder={`Search in ${displayCity}`}
-                value={filters.searchQuery}
-                onChange={(e) => handleFilterChange("searchQuery", e.target.value)}
-                className="w-full pl-8 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
+      {/* 2. MOBILE HEADER & SEARCH */}
+      <div className="md:hidden bg-white sticky top-0 z-50 pb-2">
+        {/* Main Search Bar - Pill Shape */}
+        <div className="px-4 pt-4 pb-2 bg-white">
+          <div className="relative flex items-center w-full h-12 rounded-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.12)] border border-gray-100 px-4 transition-all active:scale-[0.98]">
+            <div className="flex-shrink-0 mr-3">
+              <Search className="w-5 h-5 text-gray-800 stroke-[2.5]" />
             </div>
-            <button onClick={() => setShowWishlist(!showWishlist)} className={`p-2 rounded-lg transition-colors ${showWishlist ? "bg-red-500" : "bg-gray-200"}`}>
-              <Heart className={`w-4 h-4 ${showWishlist ? "text-white fill-white" : "text-gray-600"}`} />
-            </button>
-            <button onClick={() => setShowFilters(true)} className="p-2 bg-emerald-500 rounded-lg">
-              <SlidersHorizontal className="w-4 h-4 text-white" />
+            <input
+              type="text"
+              placeholder={`Search in ${displayCity}`}
+              value={filters.searchQuery}
+              onChange={(e) => handleFilterChange("searchQuery", e.target.value)}
+              className="flex-1 w-full bg-transparent border-none outline-none text-sm font-medium text-gray-900 placeholder:text-gray-800 placeholder:font-semibold h-full"
+            />
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowFilters(true)
+              }}
+              className="flex-shrink-0 ml-2 p-2 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <div className="p-1.5 border border-gray-300 rounded-full">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-gray-800 stroke-[2.5]" />
+              </div>
             </button>
           </div>
         </div>
-        
-        {/* Mobile Categories */}
-        <div className="px-4 pb-3">
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-            {[{ id: "hostel", label: "Hostels", icon: "/Hostel.png" }, { id: "apartment", label: "Apts", icon: "/apartment.png" }, { id: "house", label: "Homes", icon: "/house.png" }].map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => handlePropertyTypeChange(filters.propertyType === cat.id ? "" : cat.id)}
-                className={`flex-shrink-0 p-2 rounded-lg border-2 transition-all ${filters.propertyType === cat.id ? "border-emerald-500 bg-emerald-50" : "border-gray-200"}`}
-              >
-                <div className="flex flex-col items-center space-y-1 w-14">
-                  <div className="w-6 h-6 relative"><Image src={cat.icon} alt={cat.label} fill className="object-contain" /></div>
-                  <span className="text-[10px] font-medium">{cat.label}</span>
-                </div>
-              </button>
-            ))}
+         
+        {/* Mobile Categories - Clean & Green Underline */}
+        <div className="px-4 pb-2">
+          <div className="flex justify-between items-start gap-2 overflow-x-auto scrollbar-hide py-2">
+            {[
+              { id: "house", label: "Home", icon: "/home (2).png" },
+              { id: "hostel", label: "Hostel", icon: "/hostel.png" },
+              { id: "apartment", label: "Apartment", icon: "/aparment.png" },
+              { id: "office", label: "Office", icon: "/office.png" },
+              { id: "hostel-mess", label: "Mess", icon: "/food 2.png" },
+            ].map((category) => {
+              const isActive = filters.propertyType === category.id
+              
+              return (
+                <button
+                  key={category.id}
+                  onClick={() => handlePropertyTypeChange(isActive ? "" : category.id)}
+                  className="group flex flex-col items-center gap-1 min-w-[64px] focus:outline-none"
+                >
+                  <div className="relative w-12 h-12 flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
+                    <div className="relative w-10 h-10">
+                      <Image
+                        src={category.icon}
+                        alt={category.label}
+                        fill
+                        className="object-contain"
+                        priority
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center w-full">
+                    <span className={`text-xs font-medium transition-colors duration-200 ${isActive ? "text-emerald-600" : "text-gray-500 group-hover:text-gray-700"}`}>
+                      {category.label}
+                    </span>
+                    <span className={`h-[3px] rounded-full bg-emerald-500 transition-all duration-300 mt-1 ${isActive ? "w-8 opacity-100" : "w-0 opacity-0"}`}></span>
+                  </div>
+                </button>
+              )
+            })}
           </div>
         </div>
       </div>
@@ -473,7 +481,7 @@ export default function CityPropertiesPage() {
           </div>
         )}
 
-        {/* PROPERTIES GRID (6 Columns, Clean Design) */}
+        {/* PROPERTIES GRID */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-x-6 gap-y-10">
           {!loading && (showWishlist ? wishlistProperties : properties).map((property) => {
             const imageUrl = property.images?.[0]?.url || property.images?.[0] || "/placeholder.svg"
@@ -487,7 +495,6 @@ export default function CityPropertiesPage() {
                 key={property._id}
                 className="group flex flex-col gap-3 cursor-pointer"
               >
-                {/* Image Section */}
                 <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-gray-200">
                   <Image 
                     src={imageUrl} 
@@ -503,7 +510,6 @@ export default function CityPropertiesPage() {
                     </div>
                   )}
                   
-                  {/* Heart Icon Button */}
                   <button
                     onClick={(e) => toggleWishlist(e, property._id)}
                     className={`absolute top-3 right-3 p-1.5 rounded-full transition shadow-sm z-10 backdrop-blur-sm ${
@@ -516,7 +522,6 @@ export default function CityPropertiesPage() {
                   </button>
                 </div>
 
-                {/* Content Section */}
                 <div className="flex flex-col gap-1">
                   <div className="flex justify-between items-start gap-2">
                     <h3 className="font-bold text-gray-900 text-[15px] leading-tight truncate capitalize">
@@ -529,7 +534,7 @@ export default function CityPropertiesPage() {
                   </div>
                   
                   <p className="text-sm text-gray-500 truncate capitalize">
-                     {location}
+                      {location}
                   </p>
 
                   <div className="mt-1 flex items-baseline gap-1 text-gray-900">
@@ -546,34 +551,73 @@ export default function CityPropertiesPage() {
 
       <UnifiedChat isOpen={isChatOpen} onToggle={toggleChat} />
       
-      {/* 5. FOOTER (Reused) */}
+      {/* 5. FOOTER */}
       <Footer />
 
-      {/* 6. MOBILE BOTTOM NAV */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-white border-t border-slate-200 z-40 flex items-center justify-around pb-safe">
-         <Link href="/" className="flex flex-col items-center justify-center w-full h-full text-slate-600">
-            <Home className="w-5 h-5" />
-            <span className="text-[10px] mt-1">Home</span>
-         </Link>
-         <Link href="/find-rooms" className="flex flex-col items-center justify-center w-full h-full text-emerald-600">
-            <Search className="w-5 h-5" />
-            <span className="text-[10px] mt-1">Search</span>
-         </Link>
-         <button onClick={toggleChat} className="flex flex-col items-center justify-center w-full h-full text-slate-600">
-            <MessageCircle className="w-5 h-5" />
-            <span className="text-[10px] mt-1">Chat</span>
-         </button>
-         <button onClick={() => setShowMobileProfileSheet(true)} className="flex flex-col items-center justify-center w-full h-full text-slate-600">
-            <User className="w-5 h-5" />
-            <span className="text-[10px] mt-1">Profile</span>
-         </button>
+      {/* 6. MOBILE BOTTOM NAV - Updated Layout */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-[65px] bg-white border-t border-gray-200 z-50 px-6 pb-safe" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="flex items-center justify-between h-full w-full">
+          {/* Home */}
+          <Link href="/find-rooms" className="flex flex-col items-center justify-center gap-1 w-12 text-gray-400 hover:text-emerald-600 transition-colors">
+            <Home className="w-6 h-6" />
+            <span className="text-[10px] font-medium">Home</span>
+          </Link>
+
+          {/* Wishlist - ELEVATED ICON */}
+          <div className="relative">
+            <button
+              aria-label="Wishlist"
+              onClick={() => {
+                if (!requireAuth('wishlist', `/properties/${city}`)) return
+                setShowWishlist(!showWishlist)
+              }}
+              className={`
+                relative mb-10 w-14 h-14 rounded-full flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-gray-100 transition-all duration-300
+                ${showWishlist ? "bg-emerald-600 text-white" : "bg-white text-gray-400 hover:text-emerald-600"}
+              `}
+            >
+              <Heart className={`w-6 h-6 ${showWishlist ? "fill-white" : ""}`} />
+            </button>
+            <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-medium ${showWishlist ? "text-emerald-600" : "text-gray-500"}`}>
+              Wishlist
+            </span>
+          </div>
+
+          {/* Chat */}
+          <button
+            onClick={toggleChat}
+            className="flex flex-col items-center justify-center gap-1 w-12 text-gray-400 hover:text-emerald-600 transition-colors"
+          >
+            <MessageCircle className="w-6 h-6" />
+            <span className="text-[10px] font-medium">Chat</span>
+          </button>
+
+          {/* Profile */}
+          <div className="relative w-12 flex justify-center">
+             <button 
+                onClick={() => setShowMobileProfileSheet(true)}
+                className="flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-emerald-600 transition-colors"
+             >
+                {user ? (
+                  <Avatar className="w-6 h-6">
+                    <AvatarImage src={user.avatar || ""} alt={user.name} />
+                    <AvatarFallback className="bg-emerald-100 text-emerald-600 text-[10px]">
+                      {user.name?.substring(0, 1).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                ) : (
+                  <User className="w-6 h-6" />
+                )}
+                <span className="text-[10px] font-medium">{user ? "Profile" : "Login"}</span>
+             </button>
+          </div>
+        </div>
       </div>
 
-      {/* Mobile Profile Sheet (Minimal implementation) */}
+      {/* Mobile Profile Sheet */}
       <Sheet open={showMobileProfileSheet} onOpenChange={setShowMobileProfileSheet}>
         <SheetContent side="right">
            <SheetTitle>Profile</SheetTitle>
-           {/* Add your mobile profile sheet content here matching find-rooms if needed */}
            <div className="p-4">
              {user ? <Button onClick={logout} className="w-full" variant="destructive">Logout</Button> : <Link href="/auth/login"><Button className="w-full">Login</Button></Link>}
            </div>
