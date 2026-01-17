@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,8 +8,6 @@ import { useSession } from "next-auth/react";
 import { Footer } from "@/components/footer";
 import { Navbar } from "@/components/navbar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { AuthLoading } from "@/components/auth-loading";
 import { useAuth } from "@/contexts/auth-context";
@@ -19,32 +17,28 @@ import {
   Star,
   Heart,
   Share,
-  Share2,
-  Phone,
-  Mail,
   User,
   Wifi,
   Car,
   Utensils,
   Wind,
-  Users,
   ShieldCheck,
-  ChevronRight,
-  Clock,
   CheckCircle,
   ArrowLeft,
-  MessageCircle,
   LayoutGrid,
   Trophy,
   DoorOpen,
   Calendar,
   Flag,
-  Zap,
-  Droplets,
   Tv,
+  MessageCircle,
+  Phone,
+  Bed,
+  Bath,
+  Maximize,
 } from "lucide-react";
 
-// --- Map Component (Kept as provided) ---
+// --- Map Component ---
 function PropertyMap({ address, mapLink }: { address: any; mapLink?: string }) {
   let src = "";
   if (mapLink) {
@@ -74,8 +68,7 @@ function PropertyMap({ address, mapLink }: { address: any; mapLink?: string }) {
 
   return (
     <div
-      className="w-full rounded-2xl overflow-hidden border border-gray-200 cursor-pointer hover:shadow-lg transition-shadow relative z-0"
-      style={{ height: "400px" }}
+      className="w-full rounded-2xl overflow-hidden border border-gray-200 cursor-pointer hover:shadow-lg transition-shadow relative z-0 h-[200px] md:h-[400px]"
       onClick={() => window.open(src, "_blank")}
       title="Click to open in Google Maps"
     >
@@ -109,9 +102,21 @@ export default function PropertyDetailPage() {
   const [shareCopied, setShareCopied] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
+  // Ref for mobile scroll tracking
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
   const params = useParams();
   const router = useRouter();
   const propertyId = params?.id;
+
+  // Track scroll position for mobile image counter
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, clientWidth } = scrollContainerRef.current;
+      const newIndex = Math.round(scrollLeft / clientWidth);
+      setCurrentImageIndex(newIndex);
+    }
+  };
 
   // Protected contact function
   const handleProtectedContact = (contactAction: () => void) => {
@@ -186,10 +191,8 @@ export default function PropertyDetailPage() {
   };
 
   const openWhatsApp = (phoneNumber: string, customMessage?: string) => {
-    // Clean the phone number (remove spaces, dashes, etc.)
+    if (!phoneNumber) return;
     const cleanPhone = phoneNumber.replace(/[\s\-\(\)]/g, "");
-
-    // Add Pakistan country code if not present
     let whatsappNumber = cleanPhone;
     if (!cleanPhone.startsWith("92")) {
       if (cleanPhone.startsWith("0")) {
@@ -198,14 +201,10 @@ export default function PropertyDetailPage() {
         whatsappNumber = "92" + cleanPhone;
       }
     }
-
-    // Use the custom message if provided, otherwise use the default inquiry message
     const defaultMessage = `Hi! I'm interested in your property "${propertyData?.title}" at ${propertyData?.address?.area}, ${propertyData?.address?.city}. Can you provide more details?`;
-
     const finalMessage = customMessage || defaultMessage;
     const encodedMessage = encodeURIComponent(finalMessage);
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
-
     window.open(whatsappUrl, "_blank");
   };
 
@@ -230,7 +229,6 @@ export default function PropertyDetailPage() {
         setReviewRating(0);
         setReviewComment("");
         setShowReviewForm(false);
-        // Refresh
         const reviewsRes = await fetch(`/api/properties/${propertyId}/reviews`);
         if (reviewsRes.ok) {
           const rData = await reviewsRes.json();
@@ -263,13 +261,7 @@ export default function PropertyDetailPage() {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Property Not Found
           </h1>
-          <p className="text-gray-600 mb-6">
-            This listing may have been removed or does not exist.
-          </p>
-          <Button
-            asChild
-            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-8"
-          >
+          <Button asChild className="bg-emerald-600 rounded-xl px-8">
             <Link href="/find-rooms">Back to Search</Link>
           </Button>
         </div>
@@ -284,14 +276,125 @@ export default function PropertyDetailPage() {
   const locationString = propertyData.address
     ? `${propertyData.address.area}, ${propertyData.address.city}`
     : "Pakistan";
+  
+  const price =
+    propertyData.pricing?.pricePerBed || propertyData.pricing?.price || 0;
 
   return (
-    <div className="min-h-screen bg-white text-gray-800 font-sans">
+    // Added pb-24 to body to prevent sticky bottom bar from covering content on mobile
+    <div className="min-h-screen bg-white text-gray-800 font-sans pb-24 lg:pb-0 relative">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* 1. Header Section */}
-        <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-6 gap-4">
+      {/* --- MOBILE: Top Image with Floating Details Card --- */}
+      <div className="md:hidden relative w-full">
+        {/* Main Image */}
+        <div className="relative w-full h-[300px] bg-gray-100 group">
+            <Image
+                src={images[0] || "/placeholder.svg"}
+                alt="Main View"
+                fill
+                className="object-cover"
+                priority
+            />
+            {/* Mobile Action Buttons (Share/Save) Overlay */}
+            <div className="absolute top-4 right-4 flex gap-3 z-10">
+                <button 
+                    onClick={handleShare}
+                    className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-gray-700 shadow-sm active:scale-95 transition"
+                >
+                    <Share className="w-4 h-4" />
+                </button>
+                <button 
+                    onClick={() => setIsSaved(!isSaved)}
+                    className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm active:scale-95 transition"
+                >
+                    <Heart className={`w-4 h-4 ${isSaved ? "fill-red-500 text-red-500" : "text-gray-700"}`} />
+                </button>
+            </div>
+             {/* Mobile Image Counter */}
+            <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white text-xs font-medium px-3 py-1.5 rounded-full z-10 flex items-center gap-1">
+             <Image src="/placeholder.svg" alt="gallery" width={12} height={12} className="w-3 h-3"/> {images.length > 0 ? currentImageIndex + 1 : 0} / {images.length}
+            </div>
+        </div>
+
+        {/* Floating Details Card */}
+        <div className="relative mx-4 -mt-16 z-10 p-5 bg-white rounded-2xl shadow-lg border border-gray-100">
+            <div className="flex justify-between items-start mb-3">
+                <div>
+                    <div className="text-xs font-bold text-orange-500 uppercase tracking-wider mb-1">
+                        {propertyData.propertyType || "Apartment"}
+                    </div>
+                    <h1 className="text-xl font-bold text-gray-900 capitalize leading-tight mb-2">
+                        {propertyData.title}
+                    </h1>
+                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
+                        <MapPin className="w-4 h-4 text-blue-500" />
+                        <span className="truncate">{locationString}</span>
+                    </div>
+                </div>
+                <div className="flex flex-col items-end">
+                     <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-bold text-blue-600">
+                            Rs {price >= 1000 ? `${(price / 1000).toFixed(0)}k` : price}
+                        </span>
+                        <span className="text-xs text-gray-400 font-medium">/ month</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div className="flex items-center justify-between text-sm text-gray-600 pt-3 border-t border-gray-100">
+                <div className="flex items-center gap-1">
+                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    <span className="font-bold text-gray-900">{displayRating}</span>
+                    <span className="text-gray-400">({reviews.length} reviews)</span>
+                </div>
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1">
+                        <Bed className="w-4 h-4 text-gray-400" />
+                        <span>{propertyData.totalRooms || 1} Beds</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <Bath className="w-4 h-4 text-gray-400" />
+                         <span>{propertyData.baths || 1} Baths</span>
+                    </div>
+                     <div className="flex items-center gap-1">
+                        <Maximize className="w-4 h-4 text-gray-400" />
+                         <span>{propertyData.area || 1200} sqft</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {/* Icon Bar */}
+        <div className="flex justify-around items-center p-4 mx-4 mt-4 bg-white rounded-2xl shadow-sm border border-gray-100">
+            <div className="flex flex-col items-center gap-2">
+                <Wifi className="w-5 h-5 text-blue-500" />
+                <span className="text-xs text-gray-600">Free WiFi</span>
+            </div>
+             <div className="flex flex-col items-center gap-2">
+                <Wind className="w-5 h-5 text-blue-500" />
+                <span className="text-xs text-gray-600">AC</span>
+            </div>
+             <div className="flex flex-col items-center gap-2">
+                <Car className="w-5 h-5 text-blue-500" />
+                <span className="text-xs text-gray-600">Parking</span>
+            </div>
+             <div className="flex flex-col items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-blue-500" />
+                <span className="text-xs text-gray-600">Security</span>
+            </div>
+             <div className="flex flex-col items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center text-xs font-bold">+5</div>
+                <span className="text-xs text-gray-600">More</span>
+            </div>
+        </div>
+
+      </div>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
+        
+        {/* --- DESKTOP: Header Section --- */}
+        <div className="hidden md:flex flex-col md:flex-row md:justify-between md:items-end mb-6 gap-4">
           <div className="flex flex-col gap-1">
             <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-gray-900 capitalize">
               {propertyData.title}
@@ -301,15 +404,11 @@ export default function PropertyDetailPage() {
                 <Star className="w-4 h-4 fill-gray-900 text-gray-900" />
                 {displayRating}
               </span>
-              <span className="hidden sm:inline">•</span>
+              <span>•</span>
               <span className="underline decoration-gray-400 underline-offset-2 cursor-pointer">
                 {displayReviewCount}
               </span>
-              <span className="hidden sm:inline">•</span>
-              <span className="text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full text-xs flex items-center gap-1">
-                <Trophy className="w-3 h-3" /> Guest Favorite
-              </span>
-              <span className="hidden sm:inline">•</span>
+              <span>•</span>
               <span className="underline decoration-gray-400 underline-offset-2 capitalize">
                 {locationString}
               </span>
@@ -338,11 +437,11 @@ export default function PropertyDetailPage() {
           </div>
         </div>
 
-        {/* 2. Premium Image Grid (Masonry Style) */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-2 h-[300px] md:h-[500px] mb-12 rounded-3xl overflow-hidden relative shadow-sm">
+        {/* --- DESKTOP: Masonry Grid --- */}
+        <div className="hidden md:grid grid-cols-4 gap-2 h-[500px] mb-12 rounded-3xl overflow-hidden relative shadow-sm">
           {/* Main Large Image (Left) */}
           <div
-            className="md:col-span-2 h-full relative group cursor-pointer"
+            className="col-span-2 h-full relative group cursor-pointer"
             onClick={() => setShowAllImages(true)}
           >
             <Image
@@ -354,7 +453,7 @@ export default function PropertyDetailPage() {
           </div>
 
           {/* Middle Column */}
-          <div className="hidden md:flex flex-col gap-2 md:col-span-1">
+          <div className="flex flex-col gap-2 col-span-1">
             <div
               className="h-1/2 relative group cursor-pointer"
               onClick={() => setShowAllImages(true)}
@@ -380,7 +479,7 @@ export default function PropertyDetailPage() {
           </div>
 
           {/* Right Column */}
-          <div className="hidden md:flex flex-col gap-2 md:col-span-1 relative">
+          <div className="flex flex-col gap-2 col-span-1 relative">
             <div
               className="h-1/2 relative group cursor-pointer"
               onClick={() => setShowAllImages(true)}
@@ -402,7 +501,6 @@ export default function PropertyDetailPage() {
                 fill
                 className="object-cover group-hover:brightness-95 transition duration-500"
               />
-              {/* Show All Button Overlay */}
               <div className="absolute bottom-4 right-4 z-10">
                 <button className="bg-white/90 backdrop-blur-sm text-gray-900 text-sm font-medium px-4 py-2 rounded-lg border border-gray-200 shadow-sm flex items-center gap-2 hover:scale-105 transition">
                   <LayoutGrid className="w-4 h-4" /> Show all photos
@@ -413,233 +511,100 @@ export default function PropertyDetailPage() {
         </div>
 
         {/* 3. Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 relative">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12 relative mt-6 md:mt-0">
+          
           {/* LEFT COLUMN: Details */}
-          <div className="lg:col-span-2 space-y-10">
-            {/* Host Header */}
-            <div className="border-b border-gray-200 pb-8">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-2 capitalize">
-                    {propertyData.propertyType} hosted by{" "}
-                    {propertyData.owner?.name || "Host"}
-                  </h2>
-                  <div className="flex items-center text-gray-600 text-base flex-wrap gap-2">
-                    <span>{propertyData.totalRooms || 1} Guests</span>
-                    <span>•</span>
-                    <span>{propertyData.propertyType}</span>
-                    <span>•</span>
-                    <span>{propertyData.genderPreference}</span>
-                  </div>
-                </div>
-                <div className="relative group cursor-pointer">
-                  {propertyData.owner?.avatar ? (
-                    <Image
-                      src={propertyData.owner.avatar}
-                      alt="Host"
-                      width={64}
-                      height={64}
-                      className="rounded-full border border-gray-200 object-cover"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center border border-gray-200">
-                      <User className="w-8 h-8 text-gray-400" />
-                    </div>
-                  )}
-                  {propertyData.isVerified && (
-                    <span className="absolute -bottom-1 -right-1 bg-emerald-600 text-white p-1 rounded-full border-2 border-white">
-                      <ShieldCheck className="w-3 h-3" />
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Guest Favorite Banner */}
-              {Number(displayRating) > 4.5 && (
-                <div className="bg-white border border-gray-200 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-sm mb-8 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
-                  <div className="flex items-center gap-4 text-center sm:text-left z-10">
-                    <Trophy className="w-10 h-10 text-emerald-600" />
-                    <div>
-                      <h3 className="font-bold text-gray-900 text-lg">
-                        Guest favorite
-                      </h3>
-                      <p className="text-gray-500 text-sm">
-                        One of the most loved homes on RoomMatchPK
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-8 z-10">
-                    <div className="text-center">
-                      <div className="font-bold text-2xl text-gray-900">
-                        {displayRating}
-                      </div>
-                      <div className="flex text-emerald-500 justify-center">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className="w-3 h-3 fill-current" />
-                        ))}
-                      </div>
-                    </div>
-                    <div className="h-10 w-px bg-gray-200"></div>
-                    <div className="text-center">
-                      <div className="font-bold text-2xl text-gray-900">
-                        {reviews.length}
-                      </div>
-                      <div className="text-xs underline text-gray-500 font-medium">
-                        Reviews
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Highlights */}
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <DoorOpen className="w-6 h-6 text-gray-700 mt-1" />
-                  <div>
-                    <h3 className="font-semibold text-gray-900 text-lg">
-                      Self check-in
-                    </h3>
-                    <p className="text-gray-500 text-sm">
-                      Check yourself in with the onsite staff.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <MapPin className="w-6 h-6 text-gray-700 mt-1" />
-                  <div>
-                    <h3 className="font-semibold text-gray-900 text-lg">
-                      Great location
-                    </h3>
-                    <p className="text-gray-500 text-sm">
-                      95% of recent guests gave the location a 5-star rating.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <Calendar className="w-6 h-6 text-gray-700 mt-1" />
-                  <div>
-                    <h3 className="font-semibold text-gray-900 text-lg">
-                      Free cancellation
-                    </h3>
-                    <p className="text-gray-500 text-sm">
-                      Flexible cancellation policy available.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
+          <div className="lg:col-span-2 space-y-8 md:space-y-10">
+            
             {/* Description */}
             <div className="border-b border-gray-200 pb-8">
               <h2 className="text-xl font-bold text-gray-900 mb-4">
-                About this place
+                Description
               </h2>
-              <div className="prose text-gray-600 leading-relaxed max-w-none">
+              <div className="prose text-gray-600 leading-relaxed max-w-none text-sm md:text-base">
                 <p>{propertyData.description || "No description provided."}</p>
+                <button className="text-blue-600 font-semibold mt-2">Read more</button>
               </div>
-            </div>
-
-            {/* Amenities */}
-            <div className="border-b border-gray-200 pb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                What this place offers
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8">
-                {propertyData.amenities?.map((amenity: string, idx: number) => {
-                  let Icon = CheckCircle;
-                  const lower = amenity.toLowerCase();
-                  if (lower.includes("wifi")) Icon = Wifi;
-                  if (lower.includes("ac") || lower.includes("condition"))
-                    Icon = Wind;
-                  if (lower.includes("kitchen") || lower.includes("food"))
-                    Icon = Utensils;
-                  if (lower.includes("park")) Icon = Car;
-                  if (lower.includes("tv")) Icon = Tv;
-                  return (
-                    <div
-                      key={idx}
-                      className="flex items-center gap-4 text-gray-700"
-                    >
-                      <Icon className="w-6 h-6 text-gray-600" />
-                      <span className="text-base capitalize">{amenity}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              {propertyData.amenities?.length > 8 && (
-                <button className="mt-8 border border-gray-900 text-gray-900 px-6 py-3 rounded-lg font-semibold text-sm hover:bg-gray-50 transition">
-                  Show all amenities
-                </button>
-              )}
             </div>
 
             {/* Map Section */}
-            <div className="border-b border-gray-200 pb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Where you'll be
-              </h2>
-              <p className="text-gray-500 mb-6">{locationString}</p>
+            <div className="border-b border-gray-200 pb-8 relative">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900">
+                    Location
+                </h2>
+                <button className="text-orange-500 font-semibold text-sm">Open in Maps</button>
+              </div>
               <PropertyMap
                 address={propertyData.address}
                 mapLink={propertyData.mapLink}
               />
+              <p className="text-gray-500 mt-4 text-sm md:text-base">Distance: 2.5km from University Campus</p>
             </div>
 
-            {/* Host Section */}
-            <div>
-              <div className="flex items-center gap-4 mb-4">
+            {/* Host Section (Mobile Style) */}
+            <div className="p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-gray-900">
+                        Meet the Owner
+                    </h2>
+                    <span className="bg-green-100 text-green-600 text-xs font-bold px-2 py-1 rounded-md uppercase tracking-wider">
+                        Responsive
+                    </span>
+                </div>
+              <div className="flex items-center gap-4 mb-6">
                 {propertyData.owner?.avatar ? (
                   <Image
                     src={propertyData.owner.avatar}
                     alt="Host"
                     width={64}
                     height={64}
-                    className="rounded-full object-cover"
+                    className="rounded-full object-cover w-14 h-14 md:w-16 md:h-16 border-2 border-green-500 p-0.5"
                   />
                 ) : (
-                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
-                    <User className="w-8 h-8 text-gray-500" />
+                  <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-200 rounded-full flex items-center justify-center border-2 border-green-500 p-0.5">
+                    <User className="w-6 h-6 md:w-8 md:h-8 text-gray-500" />
                   </div>
                 )}
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">
-                    Hosted by {propertyData.owner?.name || "Member"}
+                  <h2 className="text-lg md:text-xl font-bold text-gray-900 flex items-center gap-2">
+                    {propertyData.owner?.name || "Member"}
+                    <span className="flex items-center text-sm text-gray-600 font-normal">
+                         <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 mr-1" /> 4.9
+                    </span>
                   </h2>
-                  <p className="text-gray-500 text-sm">
-                    Joined {new Date(propertyData.createdAt).getFullYear()}
+                  <p className="text-gray-500 text-xs md:text-sm">
+                    Joined {new Date(propertyData.createdAt).getFullYear()} • 15 Listings
                   </p>
                 </div>
               </div>
-              <div className="flex gap-6 mb-6 text-sm text-gray-600">
-                <span className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" /> Identity
-                  verified
-                </span>
-                <span className="flex items-center gap-2">
-                  <Star className="w-4 h-4 text-yellow-500" /> Superhost
-                </span>
+              <div className="flex gap-4">
+                <Button 
+                    onClick={() => toggleChat()}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl h-12 shadow-md flex items-center justify-center gap-2"
+                >
+                    <MessageCircle className="w-5 h-5" /> Message
+                </Button>
+                <Button 
+                    onClick={() => handleProtectedContact(() => openWhatsApp(propertyData.contactInfo?.phone))}
+                    variant="outline"
+                    className="flex-1 border-gray-200 text-gray-700 font-bold rounded-xl h-12 shadow-sm flex items-center justify-center gap-2 hover:bg-gray-50"
+                >
+                    <Phone className="w-5 h-5" /> Call Now
+                </Button>
               </div>
-              <p className="text-gray-600 text-base leading-relaxed max-w-lg mb-6">
-                Response rate: 100% <br />
-                Response time: within an hour
-              </p>
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Sticky Booking Card */}
-          <div className="lg:col-span-1 relative">
+          {/* RIGHT COLUMN: Desktop Sticky Booking Card (Hidden on Mobile) */}
+          <div className="hidden lg:block lg:col-span-1 relative">
             <div className="sticky top-28">
               <div className="bg-white rounded-2xl shadow-[0_6px_24px_rgba(0,0,0,0.12)] border border-gray-200 p-6 ring-1 ring-black/5">
                 {/* Header */}
                 <div className="flex justify-between items-end mb-6">
                   <div className="flex items-baseline gap-1">
                     <span className="text-2xl font-bold text-gray-900">
-                      ₨
-                      {propertyData.pricing?.pricePerBed?.toLocaleString() ||
-                        propertyData.pricing?.price?.toLocaleString() ||
-                        "0"}
+                      Rs {price.toLocaleString()}
                     </span>
                     <span className="text-base text-gray-500"> / month</span>
                   </div>
@@ -662,21 +627,9 @@ export default function PropertyDetailPage() {
                       )
                     )
                   }
-                  className="w-full h-12 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 mb-4 active:scale-[0.98]"
+                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 mb-4 active:scale-[0.98]"
                 >
-                  Request a callback
-                </Button>
-
-                <Button
-                  onClick={() =>
-                    handleProtectedContact(() =>
-                      openWhatsApp(propertyData.contactInfo?.phone)
-                    )
-                  }
-                  variant="outline"
-                  className="w-full h-12 bg-gradient-to-r font-bold rounded-xl shadow-lg shadow-emerald-500/20 mb-4 active:scale-[0.98] hover:bg-gray-50"
-                >
-                  Contact Host
+                  Book Now
                 </Button>
 
                 <div className="text-center mb-6">
@@ -691,11 +644,7 @@ export default function PropertyDetailPage() {
                     <span className="underline decoration-gray-300 cursor-help">
                       Monthly Rent
                     </span>
-                    <span>
-                      ₨
-                      {propertyData.pricing?.pricePerBed?.toLocaleString() ||
-                        "0"}
-                    </span>
+                    <span>Rs {price.toLocaleString()}</span>
                   </div>
                   {propertyData.pricing?.securityDeposit && (
                     <div className="flex justify-between">
@@ -703,74 +652,95 @@ export default function PropertyDetailPage() {
                         Security Deposit
                       </span>
                       <span>
-                        ₨{propertyData.pricing.securityDeposit.toLocaleString()}
+                        Rs {propertyData.pricing.securityDeposit.toLocaleString()}
                       </span>
                     </div>
                   )}
                   <div className="border-t border-gray-200 pt-3 flex justify-between font-bold text-gray-900 text-base">
                     <span>Total</span>
                     <span>
-                      ₨
+                      Rs 
                       {(
-                        (propertyData.pricing?.pricePerBed || 0) +
+                        price +
                         (propertyData.pricing?.securityDeposit || 0)
                       ).toLocaleString()}
                     </span>
                   </div>
                 </div>
-              </div>
 
-              {/* Report Flag */}
-              <div className="mt-6 flex justify-center gap-2 text-gray-500 text-sm items-center cursor-pointer hover:underline">
-                <Flag className="w-4 h-4" />
-                <span>Report this listing</span>
+                {/* Report Flag */}
+                <div className="mt-6 flex justify-center gap-2 text-gray-500 text-sm items-center cursor-pointer hover:underline">
+                  <Flag className="w-4 h-4" />
+                  <span>Report this listing</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 4. Reviews Section (Clean & Simple) */}
-        <div className="mt-16 pt-12 border-t border-gray-200">
-          <div className="flex items-center gap-4 mb-8">
-            <Star className="w-6 h-6 fill-gray-900 text-gray-900" />
-            <h2 className="text-2xl font-bold text-gray-900">
-              {displayRating} · {reviews.length} reviews
-            </h2>
+        {/* 4. Reviews Section */}
+        <div className="mt-16 pt-8 border-t border-gray-200">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900">
+                Ratings & Reviews
+                </h2>
+                 <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold text-gray-900">{displayRating}</span>
+                    <div className="flex flex-col">
+                        <div className="flex gap-1">
+                            {[...Array(5)].map((_, starIdx) => (
+                            <Star
+                                key={starIdx}
+                                className={`w-3 h-3 ${
+                                starIdx < Math.round(Number(displayRating))
+                                    ? "fill-yellow-400 text-yellow-400"
+                                    : "text-gray-300"
+                                }`}
+                            />
+                            ))}
+                        </div>
+                        <span className="text-xs text-gray-500">{reviews.length} Reviews</span>
+                    </div>
+                </div>
+            </div>
+            <button className="text-orange-500 font-semibold text-sm">See All</button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {reviews.length > 0 ? (
               reviews.map((review: any, i: number) => (
-                <div key={i} className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                      <User className="w-6 h-6 text-gray-400" />
+                <div key={i} className="space-y-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                        {review.studentName ? review.studentName.charAt(0).toUpperCase() : "S"}
+                        </div>
+                        <div>
+                        <h4 className="font-bold text-gray-900 text-sm md:text-base">
+                            {review.studentName || "Student"}
+                        </h4>
+                        <p className="text-xs md:text-sm text-gray-500">
+                            {new Date(review.createdAt).toLocaleDateString()}
+                        </p>
+                        </div>
                     </div>
-                    <div>
-                      <h4 className="font-bold text-gray-900">
-                        {review.studentName || "Student"}
-                      </h4>
-                      <p className="text-sm text-gray-500">
-                        {new Date(review.createdAt).toLocaleDateString()}
-                      </p>
+                    <div className="flex gap-1">
+                        {[...Array(5)].map((_, starIdx) => (
+                        <Star
+                            key={starIdx}
+                            className={`w-3 h-3 ${
+                            starIdx < review.rating
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-gray-300"
+                            }`}
+                        />
+                        ))}
                     </div>
                   </div>
-                  <p className="text-gray-600 leading-relaxed line-clamp-3">
+                  <p className="text-gray-600 leading-relaxed text-sm md:text-base line-clamp-3">
                     {review.comment}
                   </p>
-                  {/* Rating Stars for review */}
-                  <div className="flex gap-1">
-                    {[...Array(5)].map((_, starIdx) => (
-                      <Star
-                        key={starIdx}
-                        className={`w-3 h-3 ${
-                          starIdx < review.rating
-                            ? "fill-gray-900"
-                            : "text-gray-300"
-                        }`}
-                      />
-                    ))}
-                  </div>
                 </div>
               ))
             ) : (
@@ -780,9 +750,8 @@ export default function PropertyDetailPage() {
             )}
           </div>
 
-          {/* Write Review Button */}
           {session?.user?.role === "student" && (
-            <div className="mt-10">
+            <div className="mt-10 mb-8">
               <Button
                 variant="outline"
                 onClick={() => setShowReviewForm(!showReviewForm)}
@@ -800,7 +769,7 @@ export default function PropertyDetailPage() {
                         key={star}
                         className={`w-6 h-6 cursor-pointer ${
                           star <= reviewRating
-                            ? "fill-gray-900 text-gray-900"
+                            ? "fill-yellow-400 text-yellow-400"
                             : "text-gray-300"
                         }`}
                         onClick={() => setReviewRating(star)}
@@ -825,26 +794,93 @@ export default function PropertyDetailPage() {
             </div>
           )}
         </div>
+
+        {/* Related Properties Placeholder */}
+        <div className="mt-16 pt-8 border-t border-gray-200">
+             <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6">
+                Related Properties
+            </h2>
+            <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide">
+                {[1, 2].map((item) => (
+                    <div key={item} className="min-w-[250px] md:min-w-[300px] bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                        <div className="relative h-40 bg-gray-200">
+                            <Image src="/placeholder.svg" alt="related" fill className="object-cover" />
+                            <span className="absolute top-2 left-2 bg-gray-900/70 text-white text-xs font-bold px-2 py-1 rounded-md">Apartment</span>
+                             <button className="absolute top-2 right-2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-sm">
+                                <Heart className="w-4 h-4 text-gray-600" />
+                            </button>
+                        </div>
+                        <div className="p-4">
+                             <div className="flex justify-between items-start mb-2">
+                                <h3 className="font-bold text-gray-900 truncate">Clifton View Appt</h3>
+                                <div className="flex items-center gap-1 text-sm">
+                                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" /> 4.5
+                                </div>
+                            </div>
+                            <p className="text-gray-500 text-xs mb-3 truncate">Block 4, Clifton, Karachi</p>
+                             <div className="flex justify-between items-center">
+                                <div>
+                                    <span className="text-lg font-bold text-blue-600">Rs 38k</span>
+                                    <span className="text-xs text-gray-500">/mo</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                     <div className="flex items-center gap-1"><Bed className="w-3 h-3"/> 2</div>
+                                     <div className="flex items-center gap-1"><Bath className="w-3 h-3"/> 1</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+
       </main>
+
+      {/* --- MOBILE: Sticky Bottom Bar --- */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-5 py-4 z-50 lg:hidden flex items-center justify-between shadow-[0_-4px_20px_rgba(0,0,0,0.08)] pb-safe">
+        <div className="flex flex-col">
+            <span className="text-xs text-gray-500 font-medium mb-0.5">Total Price</span>
+            <div className="flex items-baseline gap-1">
+                <span className="text-xl font-bold text-blue-600">
+                    Rs {price.toLocaleString()}
+                </span>
+            </div>
+        </div>
+        <Button 
+            onClick={() =>
+                handleProtectedContact(() =>
+                  openWhatsApp(
+                    propertyData.contactInfo?.phone,
+                    `Hi! I am interested in your property "${propertyData?.title}".`
+                  )
+                )
+            }
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-8 h-12 shadow-lg shadow-blue-500/20 active:scale-95 transition-transform w-1/2"
+        >
+            Book Now <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+        </Button>
+      </div>
 
       <Footer />
 
-      {/* Image Modal */}
+      {/* Image Modal (Desktop) */}
       {showAllImages && (
         <div className="fixed inset-0 bg-black z-[100] overflow-y-auto">
           <div className="max-w-7xl mx-auto px-4 py-8">
             <button
               onClick={() => setShowAllImages(false)}
-              className="fixed top-8 left-8 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition"
+              className="fixed top-8 left-8 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition z-50"
             >
               <ArrowLeft className="w-6 h-6" />
             </button>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-12">
-              {getImageUrls().map((url, i) => (
+              {images.map((url, i) => (
                 <div
                   key={i}
                   className={`relative ${
-                    i % 3 === 0 ? "md:col-span-2 aspect-[2/1]" : "aspect-square"
+                    i % 3 === 0
+                      ? "md:col-span-2 aspect-[2/1]"
+                      : "aspect-square"
                   }`}
                 >
                   <Image
