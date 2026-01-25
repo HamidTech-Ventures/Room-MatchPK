@@ -560,7 +560,6 @@ export default function CityPropertiesPage() {
           {/* Home */}
           <Link href="/find-rooms" className="flex flex-col items-center justify-center gap-1 w-12 text-gray-400 hover:text-emerald-600 transition-colors">
             <Home className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Home</span>
           </Link>
 
           {/* Wishlist - ELEVATED ICON */}
@@ -572,15 +571,19 @@ export default function CityPropertiesPage() {
                 setShowWishlist(!showWishlist)
               }}
               className={`
-                relative mb-10 w-14 h-14 rounded-full flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-gray-100 transition-all duration-300
+                w-9 h-9 flex items-center justify-center rounded-md
                 ${showWishlist ? "bg-emerald-600 text-white" : "bg-white text-gray-400 hover:text-emerald-600"}
               `}
             >
-              <Heart className={`w-6 h-6 ${showWishlist ? "fill-white" : ""}`} />
+              <Heart 
+                            className={`w-5 h-5 transition-colors ${
+                              showWishlist 
+                                ? "fill-emerald-600 text-emerald-600" 
+                                : "text-slate-700"
+                            }`} 
+                          />
             </button>
-            <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-medium ${showWishlist ? "text-emerald-600" : "text-gray-500"}`}>
-              Wishlist
-            </span>
+            
           </div>
 
           {/* Chat */}
@@ -589,7 +592,6 @@ export default function CityPropertiesPage() {
             className="flex flex-col items-center justify-center gap-1 w-12 text-gray-400 hover:text-emerald-600 transition-colors"
           >
             <MessageCircle className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Chat</span>
           </button>
 
           {/* Profile */}
@@ -608,7 +610,6 @@ export default function CityPropertiesPage() {
                 ) : (
                   <User className="w-6 h-6" />
                 )}
-                <span className="text-[10px] font-medium">{user ? "Profile" : "Login"}</span>
              </button>
           </div>
         </div>
@@ -616,7 +617,7 @@ export default function CityPropertiesPage() {
 
       {/* Mobile Profile Sheet */}
       <Sheet open={showMobileProfileSheet} onOpenChange={setShowMobileProfileSheet}>
-        <SheetContent side="right">
+        <SheetContent side="right"> 
            <SheetTitle>Profile</SheetTitle>
            <div className="p-4">
              {user ? <Button onClick={logout} className="w-full" variant="destructive">Logout</Button> : <Link href="/auth/login"><Button className="w-full">Login</Button></Link>}
