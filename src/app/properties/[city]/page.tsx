@@ -342,7 +342,7 @@ export default function CityPropertiesPage() {
           <div className="flex justify-between items-start gap-2 overflow-x-auto scrollbar-hide py-2">
             {[
               { id: "house", label: "Home", icon: "/home (2).png" },
-              { id: "hostel", label: "Hostel", icon: "/hostel.png" },
+              { id: "hostel", label: "Hostel", icon: "/Hostel.png" },
               { id: "apartment", label: "Apartment", icon: "/aparment.png" }, 
               { id: "office", label: "Office", icon: "/office.png" },
               { id: "hostel-mess", label: "Mess", icon: "/food 2.png" },
