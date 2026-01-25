@@ -518,39 +518,48 @@ export default function PropertyDetailPage() {
           <div className="lg:col-span-2 space-y-8 md:space-y-10">
             
             {/* Shared Icon Bar (Visible on both Mobile and Desktop) */}
-            {/* Amenities Section - 5 Items Per Line */}
-            <div className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
-              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-6">
-                Amenities
-              </h3>
-              
-              <div className="grid grid-cols-5 gap-y-6 gap-x-2 md:gap-x-4">
-                {[
-                  { icon: Wifi, label: "Free WiFi" },
-                  { icon: Wind, label: "AC" },
-                  { icon: Car, label: "Parking" },
-                  { icon: ShieldCheck, label: "Security" },
-                  { icon: Utensils, label: "Meals" },
-                  { icon: Tv, label: "TV/Cable" },
-                  { icon: Bath, label: "Att. Bath" },
-                  { icon: CheckCircle, label: "Cleaning" },
-                  { icon: Maximize, label: "Open Space" },
-                  { icon: Info, label: "Help Desk" },
-                ].map((item, index) => (
-                  <div 
-                    key={index} 
-                    className="flex flex-col items-center gap-2 group cursor-default"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-gray-50 group-hover:bg-blue-50 flex items-center justify-center transition-colors duration-300">
-                      <item.icon className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform duration-300" />
-                    </div>
-                    <span className="text-[10px] md:text-xs text-gray-600 font-medium text-center leading-tight group-hover:text-blue-600 transition-colors">
-                      {item.label}
-                    </span>
-                  </div>
-                ))}
+            {/* Dynamic Amenities Section - Shows ONLY what Admin added */}
+            {propertyData.amenities && propertyData.amenities.length > 0 && (
+              <div className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
+                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-6">
+                  What this place offers
+                </h3>
+
+                <div className="grid grid-cols-5 gap-y-6 gap-x-2 md:gap-x-4">
+                  {propertyData.amenities.map((amenityName: string, index: number) => {
+                    
+                    // --- Icon Selection Logic based on Keyword ---
+                    const lowerName = amenityName.toLowerCase();
+                    let SelectedIcon = CheckCircle; // Default Icon
+
+                    if (lowerName.includes("wifi") || lowerName.includes("internet") || lowerName.includes("net")) SelectedIcon = Wifi;
+                    else if (lowerName.includes("ac") || lowerName.includes("air") || lowerName.includes("cool")) SelectedIcon = Wind;
+                    else if (lowerName.includes("parking") || lowerName.includes("car") || lowerName.includes("garage")) SelectedIcon = Car;
+                    else if (lowerName.includes("security") || lowerName.includes("guard") || lowerName.includes("cctv") || lowerName.includes("camera")) SelectedIcon = ShieldCheck;
+                    else if (lowerName.includes("food") || lowerName.includes("kitchen") || lowerName.includes("meal") || lowerName.includes("mess")) SelectedIcon = Utensils;
+                    else if (lowerName.includes("tv") || lowerName.includes("cable") || lowerName.includes("netflix")) SelectedIcon = Tv;
+                    else if (lowerName.includes("bath") || lowerName.includes("washroom") || lowerName.includes("geyser")) SelectedIcon = Bath;
+                    else if (lowerName.includes("bed") || lowerName.includes("room")) SelectedIcon = Bed;
+                    else if (lowerName.includes("clean") || lowerName.includes("laundry") || lowerName.includes("iron")) SelectedIcon = CheckCircle;
+                    else if (lowerName.includes("open") || lowerName.includes("terrace") || lowerName.includes("view")) SelectedIcon = Maximize;
+
+                    return (
+                      <div
+                        key={index}
+                        className="flex flex-col items-center gap-2 group cursor-default"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-gray-50 group-hover:bg-blue-50 flex items-center justify-center transition-colors duration-300">
+                          <SelectedIcon className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform duration-300" />
+                        </div>
+                        <span className="text-[10px] md:text-xs text-gray-600 font-medium text-center leading-tight group-hover:text-blue-600 transition-colors capitalize">
+                          {amenityName}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Mobile Only Price Breakdown */}
             <div className="lg:hidden p-5 bg-blue-50 rounded-2xl border border-blue-100 space-y-3">
