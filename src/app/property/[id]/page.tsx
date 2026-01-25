@@ -36,6 +36,8 @@ import {
   Bed,
   Bath,
   Maximize,
+  Info,
+  X, // Added X for the Modal Close button
 } from "lucide-react";
 
 // --- Map Component ---
@@ -89,6 +91,7 @@ function PropertyMap({ address, mapLink }: { address: any; mapLink?: string }) {
 export default function PropertyDetailPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showAllImages, setShowAllImages] = useState(false);
+  const [showAmenities, setShowAmenities] = useState(false); // New State for Amenities Modal
   const [propertyData, setPropertyData] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -276,7 +279,7 @@ export default function PropertyDetailPage() {
   const locationString = propertyData.address
     ? `${propertyData.address.area}, ${propertyData.address.city}`
     : "Pakistan";
-  
+
   const price =
     propertyData.pricing?.pricePerBed || propertyData.pricing?.price || 0;
 
@@ -287,112 +290,110 @@ export default function PropertyDetailPage() {
 
       {/* --- MOBILE: Top Image with Floating Details Card --- */}
       <div className="md:hidden relative w-full">
-        {/* Main Image */}
-        <div className="relative w-full h-[300px] bg-gray-100 group">
-            <Image
-                src={images[0] || "/placeholder.svg"}
+        {/* Main Image Slider */}
+        <div 
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="relative w-full h-[300px] bg-gray-100 flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+        >
+          {images.length > 0 ? (
+            images.map((img, idx) => (
+              <div key={idx} className="relative w-full h-full flex-shrink-0 snap-center">
+                 <Image
+                  src={img || "/placeholder.svg"}
+                  alt={`View ${idx + 1}`}
+                  fill
+                  className="object-cover"
+                  priority={idx === 0}
+                />
+              </div>
+            ))
+          ) : (
+            <div className="relative w-full h-full flex-shrink-0 snap-center">
+              <Image
+                src="/placeholder.svg"
                 alt="Main View"
                 fill
                 className="object-cover"
-                priority
+              />
+            </div>
+          )}
+
+          {/* Mobile Action Buttons (Share/Save) Overlay */}
+          <div className="absolute top-4 right-4 flex gap-3 z-10 sticky-action-buttons">
+            <button
+              onClick={handleShare}
+              className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-gray-700 shadow-sm active:scale-95 transition"
+            >
+              <Share className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setIsSaved(!isSaved)}
+              className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm active:scale-95 transition"
+            >
+              <Heart
+                className={`w-4 h-4 ${
+                  isSaved ? "fill-red-500 text-red-500" : "text-gray-700"
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Mobile Image Counter */}
+          <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white text-xs font-medium px-3 py-1.5 rounded-full z-10 flex items-center gap-1 sticky-counter">
+            <Image
+              src="/placeholder.svg"
+              alt="gallery"
+              width={12}
+              height={12}
+              className="w-3 h-3 invert"
             />
-            {/* Mobile Action Buttons (Share/Save) Overlay */}
-            <div className="absolute top-4 right-4 flex gap-3 z-10">
-                <button 
-                    onClick={handleShare}
-                    className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-gray-700 shadow-sm active:scale-95 transition"
-                >
-                    <Share className="w-4 h-4" />
-                </button>
-                <button 
-                    onClick={() => setIsSaved(!isSaved)}
-                    className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm active:scale-95 transition"
-                >
-                    <Heart className={`w-4 h-4 ${isSaved ? "fill-red-500 text-red-500" : "text-gray-700"}`} />
-                </button>
-            </div>
-             {/* Mobile Image Counter */}
-            <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white text-xs font-medium px-3 py-1.5 rounded-full z-10 flex items-center gap-1">
-             <Image src="/placeholder.svg" alt="gallery" width={12} height={12} className="w-3 h-3"/> {images.length > 0 ? currentImageIndex + 1 : 0} / {images.length}
-            </div>
+            {images.length > 0 ? currentImageIndex + 1 : 0} / {images.length}
+          </div>
         </div>
 
         {/* Floating Details Card */}
         <div className="relative mx-4 -mt-16 z-10 p-5 bg-white rounded-2xl shadow-lg border border-gray-100">
-            <div className="flex justify-between items-start mb-3">
-                <div>
-                    <div className="text-xs font-bold text-orange-500 uppercase tracking-wider mb-1">
-                        {propertyData.propertyType || "Apartment"}
-                    </div>
-                    <h1 className="text-xl font-bold text-gray-900 capitalize leading-tight mb-2">
-                        {propertyData.title}
-                    </h1>
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
-                        <MapPin className="w-4 h-4 text-blue-500" />
-                        <span className="truncate">{locationString}</span>
-                    </div>
-                </div>
-                <div className="flex flex-col items-end">
-                     <div className="flex items-baseline gap-1">
-                        <span className="text-xl font-bold text-blue-600">
-                            Rs {price >= 1000 ? `${(price / 1000).toFixed(0)}k` : price}
-                        </span>
-                        <span className="text-xs text-gray-400 font-medium">/ month</span>
-                    </div>
-                </div>
+          <div className="flex justify-between items-start mb-3">
+            <div>
+              <div className="text-xs font-bold text-orange-500 uppercase tracking-wider mb-1">
+                {propertyData.propertyType || "Apartment"}
+              </div>
+              <h1 className="text-xl font-bold text-gray-900 capitalize leading-tight mb-2">
+                {propertyData.title}
+              </h1>
+              <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
+                <MapPin className="w-4 h-4 text-blue-500" />
+                <span className="truncate">{locationString}</span>
+              </div>
             </div>
-            
-            <div className="flex items-center justify-between text-sm text-gray-600 pt-3 border-t border-gray-100">
-                <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-bold text-gray-900">{displayRating}</span>
-                    <span className="text-gray-400">({reviews.length} reviews)</span>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1">
-                        <Bed className="w-4 h-4 text-gray-400" />
-                        <span>{propertyData.totalRooms || 1} Beds</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <Bath className="w-4 h-4 text-gray-400" />
-                         <span>{propertyData.baths || 1} Baths</span>
-                    </div>
-                     <div className="flex items-center gap-1">
-                        <Maximize className="w-4 h-4 text-gray-400" />
-                         <span>{propertyData.area || 1200} sqft</span>
-                    </div>
-                </div>
+            <div className="flex flex-col items-end">
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl font-bold text-blue-600">
+                  Rs{" "}
+                  {price >= 1000 ? `${(price / 1000).toFixed(0)}k` : price}
+                </span>
+                <span className="text-xs text-gray-400 font-medium">
+                  / month
+                </span>
+              </div>
             </div>
-        </div>
-        
-        {/* Icon Bar */}
-        <div className="flex justify-around items-center p-4 mx-4 mt-4 bg-white rounded-2xl shadow-sm border border-gray-100">
-            <div className="flex flex-col items-center gap-2">
-                <Wifi className="w-5 h-5 text-blue-500" />
-                <span className="text-xs text-gray-600">Free WiFi</span>
-            </div>
-             <div className="flex flex-col items-center gap-2">
-                <Wind className="w-5 h-5 text-blue-500" />
-                <span className="text-xs text-gray-600">AC</span>
-            </div>
-             <div className="flex flex-col items-center gap-2">
-                <Car className="w-5 h-5 text-blue-500" />
-                <span className="text-xs text-gray-600">Parking</span>
-            </div>
-             <div className="flex flex-col items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-blue-500" />
-                <span className="text-xs text-gray-600">Security</span>
-            </div>
-             <div className="flex flex-col items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center text-xs font-bold">+5</div>
-                <span className="text-xs text-gray-600">More</span>
-            </div>
-        </div>
+          </div>
 
+          <div className="flex items-center justify-between text-sm text-gray-600 pt-3 border-t border-gray-100">
+            <div className="flex items-center gap-1">
+              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+              <span className="font-bold text-gray-900">{displayRating}</span>
+              <span className="text-gray-400">
+                ({reviews.length} reviews)
+              </span>
+            </div>
+            {/* REMOVED: Bed/Bath/Sqft stats section from here */}
+          </div>
+        </div>
       </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
-        
         {/* --- DESKTOP: Header Section --- */}
         <div className="hidden md:flex flex-col md:flex-row md:justify-between md:items-end mb-6 gap-4">
           <div className="flex flex-col gap-1">
@@ -412,6 +413,7 @@ export default function PropertyDetailPage() {
               <span className="underline decoration-gray-400 underline-offset-2 capitalize">
                 {locationString}
               </span>
+              {/* REMOVED: Bed/Bath/Sqft stats section from here */}
             </div>
           </div>
 
@@ -512,18 +514,84 @@ export default function PropertyDetailPage() {
 
         {/* 3. Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12 relative mt-6 md:mt-0">
-          
           {/* LEFT COLUMN: Details */}
           <div className="lg:col-span-2 space-y-8 md:space-y-10">
             
+            {/* Shared Icon Bar (Visible on both Mobile and Desktop) */}
+            <div className="flex justify-around md:justify-start md:gap-12 items-center p-4 bg-white rounded-2xl shadow-sm border border-gray-100 md:border-none md:shadow-none md:p-0 md:bg-transparent">
+                <div className="flex flex-col items-center gap-2">
+                  <Wifi className="w-5 h-5 text-blue-500" />
+                  <span className="text-xs text-gray-600">Free WiFi</span>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <Wind className="w-5 h-5 text-blue-500" />
+                  <span className="text-xs text-gray-600">AC</span>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <Car className="w-5 h-5 text-blue-500" />
+                  <span className="text-xs text-gray-600">Parking</span>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-blue-500" />
+                  <span className="text-xs text-gray-600">Security</span>
+                </div>
+                {/* Updated functional "More" button */}
+                <button 
+                  onClick={() => setShowAmenities(true)}
+                  className="flex flex-col items-center gap-2 cursor-pointer hover:bg-gray-50 rounded-lg p-1 transition"
+                >
+                  <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center text-xs font-bold">
+                    +5
+                  </div>
+                  <span className="text-xs text-gray-600">More</span>
+                </button>
+            </div>
+
+            {/* Mobile Only Price Breakdown */}
+            <div className="lg:hidden p-5 bg-blue-50 rounded-2xl border border-blue-100 space-y-3">
+                 <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                    <Info className="w-4 h-4 text-blue-600"/> Price Details
+                 </h3>
+                 <div className="space-y-2 text-sm text-gray-600">
+                    <div className="flex justify-between">
+                        <span>Monthly Rent</span>
+                        <span>Rs {price.toLocaleString()}</span>
+                    </div>
+                    {propertyData.pricing?.securityDeposit && (
+                    <div className="flex justify-between">
+                        <span>Security Deposit</span>
+                        <span>Rs {propertyData.pricing.securityDeposit.toLocaleString()}</span>
+                    </div>
+                    )}
+                    <div className="border-t border-blue-200 pt-2 flex justify-between font-bold text-gray-900">
+                        <span>Total to Start</span>
+                         <span>
+                          Rs{" "}
+                          {(
+                            price +
+                            (propertyData.pricing?.securityDeposit || 0)
+                          ).toLocaleString()}
+                        </span>
+                    </div>
+                 </div>
+                 <div className="pt-2 flex justify-start gap-2 text-gray-400 text-xs items-center cursor-pointer">
+                    <Flag className="w-3 h-3" />
+                    <span>Report this listing</span>
+                 </div>
+            </div>
+
             {/* Description */}
             <div className="border-b border-gray-200 pb-8">
               <h2 className="text-xl font-bold text-gray-900 mb-4">
                 Description
               </h2>
               <div className="prose text-gray-600 leading-relaxed max-w-none text-sm md:text-base">
-                <p>{propertyData.description || "No description provided."}</p>
-                <button className="text-blue-600 font-semibold mt-2">Read more</button>
+                <p>
+                  {propertyData.description || "No description provided."}
+                </p>
+                <button className="text-blue-600 font-semibold mt-2">
+                  Read more
+                </button>
               </div>
             </div>
 
@@ -531,27 +599,31 @@ export default function PropertyDetailPage() {
             <div className="border-b border-gray-200 pb-8 relative">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl md:text-2xl font-bold text-gray-900">
-                    Location
+                  Location
                 </h2>
-                <button className="text-orange-500 font-semibold text-sm">Open in Maps</button>
+                <button className="text-orange-500 font-semibold text-sm">
+                  Open in Maps
+                </button>
               </div>
               <PropertyMap
                 address={propertyData.address}
                 mapLink={propertyData.mapLink}
               />
-              <p className="text-gray-500 mt-4 text-sm md:text-base">Distance: 2.5km from University Campus</p>
+              <p className="text-gray-500 mt-4 text-sm md:text-base">
+                Distance: 2.5km from University Campus
+              </p>
             </div>
 
-            {/* Host Section (Mobile Style) */}
+            {/* Host Section */}
             <div className="p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold text-gray-900">
-                        Meet the Owner
-                    </h2>
-                    <span className="bg-green-100 text-green-600 text-xs font-bold px-2 py-1 rounded-md uppercase tracking-wider">
-                        Responsive
-                    </span>
-                </div>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-900">
+                  Meet the Owner
+                </h2>
+                <span className="bg-green-100 text-green-600 text-xs font-bold px-2 py-1 rounded-md uppercase tracking-wider">
+                  Responsive
+                </span>
+              </div>
               <div className="flex items-center gap-4 mb-6">
                 {propertyData.owner?.avatar ? (
                   <Image
@@ -570,27 +642,33 @@ export default function PropertyDetailPage() {
                   <h2 className="text-lg md:text-xl font-bold text-gray-900 flex items-center gap-2">
                     {propertyData.owner?.name || "Member"}
                     <span className="flex items-center text-sm text-gray-600 font-normal">
-                         <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 mr-1" /> 4.9
+                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 mr-1" />{" "}
+                      4.9
                     </span>
                   </h2>
                   <p className="text-gray-500 text-xs md:text-sm">
-                    Joined {new Date(propertyData.createdAt).getFullYear()} • 15 Listings
+                    Joined {new Date(propertyData.createdAt).getFullYear()} • 15
+                    Listings
                   </p>
                 </div>
               </div>
               <div className="flex gap-4">
-                <Button 
-                    onClick={() => toggleChat()}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl h-12 shadow-md flex items-center justify-center gap-2"
+                <Button
+                  onClick={() => toggleChat()}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl h-12 shadow-md flex items-center justify-center gap-2"
                 >
-                    <MessageCircle className="w-5 h-5" /> Message
+                  <MessageCircle className="w-5 h-5" /> Message
                 </Button>
-                <Button 
-                    onClick={() => handleProtectedContact(() => openWhatsApp(propertyData.contactInfo?.phone))}
-                    variant="outline"
-                    className="flex-1 border-gray-200 text-gray-700 font-bold rounded-xl h-12 shadow-sm flex items-center justify-center gap-2 hover:bg-gray-50"
+                <Button
+                  onClick={() =>
+                    handleProtectedContact(() =>
+                      openWhatsApp(propertyData.contactInfo?.phone)
+                    )
+                  }
+                  variant="outline"
+                  className="flex-1 border-gray-200 text-gray-700 font-bold rounded-xl h-12 shadow-sm flex items-center justify-center gap-2 hover:bg-gray-50"
                 >
-                    <Phone className="w-5 h-5" /> contact Owner
+                  <Phone className="w-5 h-5" /> contact Owner
                 </Button>
               </div>
             </div>
@@ -652,14 +730,15 @@ export default function PropertyDetailPage() {
                         Security Deposit
                       </span>
                       <span>
-                        Rs {propertyData.pricing.securityDeposit.toLocaleString()}
+                        Rs{" "}
+                        {propertyData.pricing.securityDeposit.toLocaleString()}
                       </span>
                     </div>
                   )}
                   <div className="border-t border-gray-200 pt-3 flex justify-between font-bold text-gray-900 text-base">
                     <span>Total</span>
                     <span>
-                      Rs 
+                      Rs{" "}
                       {(
                         price +
                         (propertyData.pricing?.securityDeposit || 0)
@@ -682,60 +761,71 @@ export default function PropertyDetailPage() {
         <div className="mt-16 pt-8 border-t border-gray-200">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
-                <h2 className="text-xl md:text-2xl font-bold text-gray-900">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900">
                 Ratings & Reviews
-                </h2>
-                 <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold text-gray-900">{displayRating}</span>
-                    <div className="flex flex-col">
-                        <div className="flex gap-1">
-                            {[...Array(5)].map((_, starIdx) => (
-                            <Star
-                                key={starIdx}
-                                className={`w-3 h-3 ${
-                                starIdx < Math.round(Number(displayRating))
-                                    ? "fill-yellow-400 text-yellow-400"
-                                    : "text-gray-300"
-                                }`}
-                            />
-                            ))}
-                        </div>
-                        <span className="text-xs text-gray-500">{reviews.length} Reviews</span>
-                    </div>
+              </h2>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl font-bold text-gray-900">
+                  {displayRating}
+                </span>
+                <div className="flex flex-col">
+                  <div className="flex gap-1">
+                    {[...Array(5)].map((_, starIdx) => (
+                      <Star
+                        key={starIdx}
+                        className={`w-3 h-3 ${
+                          starIdx < Math.round(Number(displayRating))
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-gray-300"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-xs text-gray-500">
+                    {reviews.length} Reviews
+                  </span>
                 </div>
+              </div>
             </div>
-            <button className="text-orange-500 font-semibold text-sm">See All</button>
+            <button className="text-orange-500 font-semibold text-sm">
+              See All
+            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {reviews.length > 0 ? (
               reviews.map((review: any, i: number) => (
-                <div key={i} className="space-y-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                <div
+                  key={i}
+                  className="space-y-4 p-4 bg-gray-50 rounded-2xl border border-gray-100"
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
-                        {review.studentName ? review.studentName.charAt(0).toUpperCase() : "S"}
-                        </div>
-                        <div>
+                      <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                        {review.studentName
+                          ? review.studentName.charAt(0).toUpperCase()
+                          : "S"}
+                      </div>
+                      <div>
                         <h4 className="font-bold text-gray-900 text-sm md:text-base">
-                            {review.studentName || "Student"}
+                          {review.studentName || "Student"}
                         </h4>
                         <p className="text-xs md:text-sm text-gray-500">
-                            {new Date(review.createdAt).toLocaleDateString()}
+                          {new Date(review.createdAt).toLocaleDateString()}
                         </p>
-                        </div>
+                      </div>
                     </div>
                     <div className="flex gap-1">
-                        {[...Array(5)].map((_, starIdx) => (
+                      {[...Array(5)].map((_, starIdx) => (
                         <Star
-                            key={starIdx}
-                            className={`w-3 h-3 ${
+                          key={starIdx}
+                          className={`w-3 h-3 ${
                             starIdx < review.rating
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-gray-300"
-                            }`}
+                              ? "fill-yellow-400 text-yellow-400"
+                              : "text-gray-300"
+                          }`}
                         />
-                        ))}
+                      ))}
                     </div>
                   </div>
                   <p className="text-gray-600 leading-relaxed text-sm md:text-base line-clamp-3">
@@ -797,67 +887,89 @@ export default function PropertyDetailPage() {
 
         {/* Related Properties Placeholder */}
         <div className="mt-16 pt-8 border-t border-gray-200">
-             <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6">
-                Related Properties
-            </h2>
-            <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide">
-                {[1, 2].map((item) => (
-                    <div key={item} className="min-w-[250px] md:min-w-[300px] bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                        <div className="relative h-40 bg-gray-200">
-                            <Image src="/placeholder.svg" alt="related" fill className="object-cover" />
-                            <span className="absolute top-2 left-2 bg-gray-900/70 text-white text-xs font-bold px-2 py-1 rounded-md">Apartment</span>
-                             <button className="absolute top-2 right-2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-sm">
-                                <Heart className="w-4 h-4 text-gray-600" />
-                            </button>
-                        </div>
-                        <div className="p-4">
-                             <div className="flex justify-between items-start mb-2">
-                                <h3 className="font-bold text-gray-900 truncate">Clifton View Appt</h3>
-                                <div className="flex items-center gap-1 text-sm">
-                                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" /> 4.5
-                                </div> 
-                            </div>
-                            <p className="text-gray-500 text-xs mb-3 truncate">Block 4, Clifton, Karachi</p>
-                             <div className="flex justify-between items-center">
-                                <div>
-                                    <span className="text-lg font-bold text-blue-600">Rs 38k</span>
-                                    <span className="text-xs text-gray-500">/mo</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-xs text-gray-500">
-                                     <div className="flex items-center gap-1"><Bed className="w-3 h-3"/> 2</div>
-                                     <div className="flex items-center gap-1"><Bath className="w-3 h-3"/> 1</div>
-                                </div>
-                            </div>
-                        </div>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6">
+            Related Properties
+          </h2>
+          <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide">
+            {[1, 2].map((item) => (
+              <div
+                key={item}
+                className="min-w-[250px] md:min-w-[300px] bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden"
+              >
+                <div className="relative h-40 bg-gray-200">
+                  <Image
+                    src="/placeholder.svg"
+                    alt="related"
+                    fill
+                    className="object-cover"
+                  />
+                  <span className="absolute top-2 left-2 bg-gray-900/70 text-white text-xs font-bold px-2 py-1 rounded-md">
+                    Apartment
+                  </span>
+                  <button className="absolute top-2 right-2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-sm">
+                    <Heart className="w-4 h-4 text-gray-600" />
+                  </button>
+                </div>
+                <div className="p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-bold text-gray-900 truncate">
+                      Clifton View Appt
+                    </h3>
+                    <div className="flex items-center gap-1 text-sm">
+                      <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />{" "}
+                      4.5
                     </div>
-                ))}
-            </div>
+                  </div>
+                  <p className="text-gray-500 text-xs mb-3 truncate">
+                    Block 4, Clifton, Karachi
+                  </p>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="text-lg font-bold text-blue-600">
+                        Rs 38k
+                      </span>
+                      <span className="text-xs text-gray-500">/mo</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <div className="flex items-center gap-1">
+                        <Bed className="w-3 h-3" /> 2
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Bath className="w-3 h-3" /> 1
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-
       </main>
 
       {/* --- MOBILE: Sticky Bottom Bar --- */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-5 py-4 z-50 lg:hidden flex items-center justify-between shadow-[0_-4px_20px_rgba(0,0,0,0.08)] pb-safe">
         <div className="flex flex-col">
-            <span className="text-xs text-gray-500 font-medium mb-0.5">Total Price</span>
-            <div className="flex items-baseline gap-1">
-                <span className="text-xl font-bold text-blue-600">
-                    Rs {price.toLocaleString()}
-                </span>
-            </div>
+          <span className="text-xs text-gray-500 font-medium mb-0.5">
+            Total Price
+          </span>
+          <div className="flex items-baseline gap-1">
+            <span className="text-xl font-bold text-blue-600">
+              Rs {price.toLocaleString()}
+            </span>
+          </div>
         </div>
-        <Button 
-            onClick={() =>
-                handleProtectedContact(() =>
-                  openWhatsApp(
-                    propertyData.contactInfo?.phone,
-                    `Hi! I am interested in your property "${propertyData?.title}".`
-                  )
-                )
-            }
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-8 h-12 shadow-lg shadow-blue-500/20 active:scale-95 transition-transform w-1/2"
+        <Button
+          onClick={() =>
+            handleProtectedContact(() =>
+              openWhatsApp(
+                propertyData.contactInfo?.phone,
+                `Hi! I am interested in your property "${propertyData?.title}".`
+              )
+            )
+          }
+          className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-8 h-12 shadow-lg shadow-blue-500/20 active:scale-95 transition-transform w-1/2"
         >
-            Request a CallBack <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+          Request a CallBack <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
         </Button>
       </div>
 
@@ -895,6 +1007,37 @@ export default function PropertyDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Amenities Modal */}
+      {showAmenities && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-gray-900">What this place offers</h3>
+              <button
+                onClick={() => setShowAmenities(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 gap-4">
+              {/* If propertyData.amenities is available, map it. Otherwise show default list */}
+              {(propertyData.amenities || [
+                 "High-Speed Wifi", "Air Conditioning", "Free Parking",
+                 "24/7 Security", "Power Backup / Generator", "Daily Housekeeping",
+                 "Attached Bathroom", "Geyser / Warm Water", "Laundry Service"
+              ]).map((item: string, idx: number) => (
+                <div key={idx} className="flex items-center gap-3 p-3 border-b border-gray-100 last:border-0">
+                   <CheckCircle className="w-5 h-5 text-emerald-500" />
+                   <span className="text-gray-700 font-medium">{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
