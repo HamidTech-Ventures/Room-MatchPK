@@ -518,33 +518,38 @@ export default function PropertyDetailPage() {
           <div className="lg:col-span-2 space-y-8 md:space-y-10">
             
             {/* Shared Icon Bar (Visible on both Mobile and Desktop) */}
-            <div className="flex justify-around md:justify-start md:gap-12 items-center p-4 bg-white rounded-2xl shadow-sm border border-gray-100 md:border-none md:shadow-none md:p-0 md:bg-transparent">
-                <div className="flex flex-col items-center gap-2">
-                  <Wifi className="w-5 h-5 text-blue-500" />
-                  <span className="text-xs text-gray-600">Free WiFi</span>
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                  <Wind className="w-5 h-5 text-blue-500" />
-                  <span className="text-xs text-gray-600">AC</span>
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                  <Car className="w-5 h-5 text-blue-500" />
-                  <span className="text-xs text-gray-600">Parking</span>
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-blue-500" />
-                  <span className="text-xs text-gray-600">Security</span>
-                </div>
-                {/* Updated functional "More" button */}
-                <button 
-                  onClick={() => setShowAmenities(true)}
-                  className="flex flex-col items-center gap-2 cursor-pointer hover:bg-gray-50 rounded-lg p-1 transition"
-                >
-                  <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center text-xs font-bold">
-                    +5
+            {/* Amenities Section - 5 Items Per Line */}
+            <div className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
+              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-6">
+                Amenities
+              </h3>
+              
+              <div className="grid grid-cols-5 gap-y-6 gap-x-2 md:gap-x-4">
+                {[
+                  { icon: Wifi, label: "Free WiFi" },
+                  { icon: Wind, label: "AC" },
+                  { icon: Car, label: "Parking" },
+                  { icon: ShieldCheck, label: "Security" },
+                  { icon: Utensils, label: "Meals" },
+                  { icon: Tv, label: "TV/Cable" },
+                  { icon: Bath, label: "Att. Bath" },
+                  { icon: CheckCircle, label: "Cleaning" },
+                  { icon: Maximize, label: "Open Space" },
+                  { icon: Info, label: "Help Desk" },
+                ].map((item, index) => (
+                  <div 
+                    key={index} 
+                    className="flex flex-col items-center gap-2 group cursor-default"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-gray-50 group-hover:bg-blue-50 flex items-center justify-center transition-colors duration-300">
+                      <item.icon className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform duration-300" />
+                    </div>
+                    <span className="text-[10px] md:text-xs text-gray-600 font-medium text-center leading-tight group-hover:text-blue-600 transition-colors">
+                      {item.label}
+                    </span>
                   </div>
-                  <span className="text-xs text-gray-600">More</span>
-                </button>
+                ))}
+              </div>
             </div>
 
             {/* Mobile Only Price Breakdown */}
@@ -589,9 +594,7 @@ export default function PropertyDetailPage() {
                 <p>
                   {propertyData.description || "No description provided."}
                 </p>
-                <button className="text-blue-600 font-semibold mt-2">
-                  Read more
-                </button>
+                
               </div>
             </div>
 
