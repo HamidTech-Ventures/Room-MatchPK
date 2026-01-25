@@ -590,7 +590,7 @@ export default function PropertyDetailPage() {
                     variant="outline"
                     className="flex-1 border-gray-200 text-gray-700 font-bold rounded-xl h-12 shadow-sm flex items-center justify-center gap-2 hover:bg-gray-50"
                 >
-                    <Phone className="w-5 h-5" /> Call Now
+                    <Phone className="w-5 h-5" /> contact Owner
                 </Button>
               </div>
             </div>
@@ -629,7 +629,7 @@ export default function PropertyDetailPage() {
                   }
                   className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 mb-4 active:scale-[0.98]"
                 >
-                  Book Now
+                  Request a CallBack
                 </Button>
 
                 <div className="text-center mb-6">
@@ -815,7 +815,7 @@ export default function PropertyDetailPage() {
                                 <h3 className="font-bold text-gray-900 truncate">Clifton View Appt</h3>
                                 <div className="flex items-center gap-1 text-sm">
                                     <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" /> 4.5
-                                </div>
+                                </div> 
                             </div>
                             <p className="text-gray-500 text-xs mb-3 truncate">Block 4, Clifton, Karachi</p>
                              <div className="flex justify-between items-center">
@@ -857,7 +857,7 @@ export default function PropertyDetailPage() {
             }
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-8 h-12 shadow-lg shadow-blue-500/20 active:scale-95 transition-transform w-1/2"
         >
-            Book Now <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+            Request a CallBack <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
         </Button>
       </div>
 

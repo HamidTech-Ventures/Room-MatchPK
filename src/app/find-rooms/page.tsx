@@ -1663,25 +1663,28 @@ function FindRoomsContent() {
 
         {/* Wishlist - ELEVATED ICON */}
           <div className="relative">
-            <button
-              aria-label="Wishlist"
-              onClick={() => {
-                if (!requireAuth('wishlist', '/find-rooms')) return
-                setShowWishlist(!showWishlist)
-              }}
-              className={`
-                relative mb-10 w-14 h-14 rounded-full flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-gray-100 transition-all duration-300
-                ${showWishlist ? "bg-emerald-600 text-white" : "bg-white text-gray-400 hover:text-emerald-600"}
-              `}
-            >
-              <Heart className={`w-6 h-6 ${showWishlist ? "fill-white" : ""}`} />
-              
-              {/* Optional: Small badge or label could go here, but usually cleaner without for floating buttons */}
-            </button>
-            {/* Label for Wishlist (Optional: sits on the line) */}
-            <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-medium ${showWishlist ? "text-emerald-600" : "text-gray-500"}`}>
-              Wishlist
-            </span>
+            {/* Wishlist - Standardized Style */}
+          <button
+            aria-label="Wishlist"
+            onClick={() => {
+              if (!requireAuth('wishlist', '/find-rooms')) return
+              setShowWishlist(!showWishlist)
+            }}
+            // 1. Applied same classes as Home/Chat (w-9 h-9, flex, centering)
+            className="w-9 h-9 flex items-center justify-center rounded-md"
+            title="Wishlist"
+          >
+            {/* 2. Logic for Active State: Fill/Color change instead of background circle */}
+            <Heart 
+              className={`w-5 h-5 transition-colors ${
+                showWishlist 
+                  ? "fill-emerald-600 text-emerald-600" 
+                  : "text-slate-700"
+              }`} 
+            />
+            
+          </button>
+            
           </div>
           {/* Chat (toggle unified chat) */}
           <button
@@ -1838,7 +1841,7 @@ function FindRoomsContent() {
                   </div>
                 </SheetContent>
               </Sheet>
-            )}
+            )} 
           </div>
         </div>
       </div>

@@ -343,7 +343,7 @@ export default function CityPropertiesPage() {
             {[
               { id: "house", label: "Home", icon: "/home (2).png" },
               { id: "hostel", label: "Hostel", icon: "/hostel.png" },
-              { id: "apartment", label: "Apartment", icon: "/aparment.png" },
+              { id: "apartment", label: "Apartment", icon: "/aparment.png" }, 
               { id: "office", label: "Office", icon: "/office.png" },
               { id: "hostel-mess", label: "Mess", icon: "/food 2.png" },
             ].map((category) => {
