@@ -118,10 +118,19 @@ export async function PUT(request: NextRequest) {
     }
 
     const token = authHeader.split(' ')[1]
-    const user = await verifyToken(token)
-    if (!user) {
+    let user
+    try {
+      user = await verifyToken(token) as { id: string; role: string }
+    } catch (error) {
       return NextResponse.json(
         { success: false, error: 'Invalid or expired token' },
+        { status: 401 }
+      )
+    }
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Authorization failed' },
         { status: 401 }
       )
     }
@@ -201,10 +210,19 @@ export async function DELETE(request: NextRequest) {
     }
 
     const token = authHeader.split(' ')[1]
-    const user = await verifyToken(token)
-    if (!user) {
+    let user
+    try {
+      user = await verifyToken(token) as { id: string; role: string }
+    } catch (error) {
       return NextResponse.json(
         { success: false, error: 'Invalid or expired token' },
+        { status: 401 }
+      )
+    }
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Authorization failed' },
         { status: 401 }
       )
     }

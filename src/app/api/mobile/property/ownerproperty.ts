@@ -2,20 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDatabase } from '@/lib/mongodb'
 import { Property } from '@/lib/models'
 import { ObjectId } from 'mongodb'
-import jwt from 'jsonwebtoken'
 import { deleteFromCloudinary, extractPublicId } from '@/lib/cloudinary'
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret'
-
-// Helper function to verify JWT token
-async function verifyToken(token: string) {
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; role: string }
-    return decoded
-  } catch (error) {
-    return null
-  }
-}
+import { verifyToken } from '@/lib/auth'
 
 // GET - Fetch properties owned by the current user
 export async function GET(request: NextRequest) {
