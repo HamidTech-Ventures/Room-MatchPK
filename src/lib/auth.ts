@@ -14,34 +14,28 @@ export async function verifyPassword(password: string, hashedPassword: string): 
   return bcrypt.compare(password, hashedPassword)
 }
 
-export function getMobileSecret(): string {
-  const secret = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your_jwt_secret'
-  
-  // Safe debug logging (only first 3 chars)
-  const source = process.env.JWT_SECRET ? 'JWT_SECRET' : (process.env.NEXTAUTH_SECRET ? 'NEXTAUTH_SECRET' : 'default');
-  console.log(`[Mobile Auth] Using secret from ${source} (prefix: ${secret.substring(0, 3)}...)`);
-  
-  return secret
-}
-
 export function generateToken(user: User): string {
-  const secret = getMobileSecret()
-
+  if (!process.env.NEXTAUTH_SECRET) {
+    throw new Error('NEXTAUTH_SECRET is not defined')
+  }
+  
   return jwt.sign(
-    {
-      id: user._id || user.id,
-      email: user.email,
-      role: user.role
+    { 
+      id: user._id || user.id, 
+      email: user.email, 
+      role: user.role 
     },
-    secret,
+    process.env.NEXTAUTH_SECRET,
     { expiresIn: '7d' }
   )
 }
 
 export function verifyToken(token: string): any {
-  const secret = getMobileSecret()
-
-  return jwt.verify(token, secret)
+  if (!process.env.NEXTAUTH_SECRET) {
+    throw new Error('NEXTAUTH_SECRET is not defined')
+  }
+  
+  return jwt.verify(token, process.env.NEXTAUTH_SECRET)
 }
 
 export async function createUser(userData: CreateDocument<User>, silentMode: boolean = false): Promise<User | null> {
@@ -51,7 +45,7 @@ export async function createUser(userData: CreateDocument<User>, silentMode: boo
 
   const db = await getDatabase()
   const users = db.collection('users')
-
+  
   // Check if user already exists
   const existingUser = await users.findOne({ email: userData.email })
   if (existingUser) {
@@ -60,7 +54,7 @@ export async function createUser(userData: CreateDocument<User>, silentMode: boo
     }
     throw new Error('User already exists')
   }
-
+  
   // Hash password if provided (not needed for Google OAuth users)
   let hashedPassword: string;
   // Don't hash OAuth placeholder passwords
@@ -69,7 +63,7 @@ export async function createUser(userData: CreateDocument<User>, silentMode: boo
   } else {
     hashedPassword = await hashPassword(userData.password);
   }
-
+  
   const newUser = {
     ...userData,
     password: hashedPassword,
@@ -78,23 +72,23 @@ export async function createUser(userData: CreateDocument<User>, silentMode: boo
     emailVerified: userData.emailVerified || false,
     isActive: true // Set user as active by default
   }
-
+  
   try {
     const result = await users.insertOne(newUser)
-
+    
     const createdUser = {
       ...newUser,
       _id: result.insertedId.toString()
     }
-
+    
     if (!silentMode) {
-      console.log('User created successfully:', {
-        email: createdUser.email,
-        role: createdUser.role,
-        provider: createdUser.provider
+      console.log('User created successfully:', { 
+        email: createdUser.email, 
+        role: createdUser.role, 
+        provider: createdUser.provider 
       })
     }
-
+    
     return createdUser
   } catch (error: any) {
     console.error('Error creating user:', error)
@@ -116,10 +110,10 @@ export async function findUserByEmail(email: string): Promise<User | null> {
 
   const db = await getDatabase()
   const users = db.collection('users')
-
+  
   const user = await users.findOne({ email })
   if (!user) return null
-
+  
   return {
     ...user,
     _id: user._id.toString()
@@ -133,10 +127,10 @@ export async function findUserById(id: string): Promise<User | null> {
 
   const db = await getDatabase()
   const users = db.collection('users')
-
+  
   const user = await users.findOne({ _id: new ObjectId(id) })
   if (!user) return null
-
+  
   return {
     ...user,
     _id: user._id.toString()
@@ -148,17 +142,17 @@ export async function authenticateUser(email: string, password: string): Promise
   if (!user) {
     throw new Error('EMAIL_NOT_FOUND')
   }
-
+  
   // Check if user is an OAuth user (no password or OAuth placeholder)
   if (!user.password || user.password.startsWith('GOOGLE_OAUTH_')) {
     throw new Error('GOOGLE_ONLY_ACCOUNT')
   }
-
+  
   const isValid = await verifyPassword(password, user.password)
   if (!isValid) {
     throw new Error('WRONG_PASSWORD')
   }
-
+  
   // Remove password from returned user object
   const { password: _, ...userWithoutPassword } = user
   return userWithoutPassword
@@ -177,7 +171,7 @@ export async function initializeDefaultAdmin(): Promise<void> {
     const adminEmail = process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL || 'admin@roommatch.pk'
     const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'admin123'
     const adminName = process.env.DEFAULT_ADMIN_NAME || 'System Administrator'
-
+    
     // Try to create admin user in silent mode
     const createdAdmin = await createUser({
       email: adminEmail,
@@ -187,7 +181,7 @@ export async function initializeDefaultAdmin(): Promise<void> {
       provider: 'credentials',
       emailVerified: true
     }, true) // Silent mode enabled
-
+    
     if (createdAdmin) {
       // Admin was created successfully
       console.log('✅ Default admin user created successfully')
@@ -195,7 +189,7 @@ export async function initializeDefaultAdmin(): Promise<void> {
       console.log(`🔑 Admin Password: ${adminPassword}`)
     }
     // If createdAdmin is null, it means admin already exists - no action needed
-
+    
     adminInitialized = true
   } catch (error) {
     // Only log critical errors, not duplicate key errors

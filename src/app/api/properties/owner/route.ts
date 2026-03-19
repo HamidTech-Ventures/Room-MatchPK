@@ -4,24 +4,45 @@ import { Property } from '@/lib/models'
 import { ObjectId } from 'mongodb'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
+import { verifyToken } from '@/lib/auth'
+
+async function getAuthUser(request: NextRequest) {
+  // 1. Try Session (for Web)
+  try {
+    const session = await getServerSession(authOptions)
+    if (session?.user) {
+      return { id: session.user.id, role: session.user.role }
+    }
+  } catch (e) {
+    console.log('Session check failed, trying Bearer token...')
+  }
+
+  // 2. Try Bearer Token (for Mobile)
+  try {
+    const authHeader = request.headers.get('Authorization')
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1]
+      const decoded = verifyToken(token)
+      if (decoded?.id) {
+        return { id: decoded.id, role: decoded.role }
+      }
+    }
+  } catch (e) {
+    console.error('JWT verification failed:', e)
+  }
+
+  return null
+}
 
 // GET - Fetch properties owned by the current user
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const user = await getAuthUser(request)
     
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
-      )
-    }
-
-    // Allow both owners and students to access their properties
-    if (!['owner', 'student'].includes(session.user.role)) {
-      return NextResponse.json(
-        { success: false, error: 'Only property owners and students can access this endpoint' },
-        { status: 403 }
       )
     }
 
@@ -34,8 +55,7 @@ export async function GET(request: NextRequest) {
     const db = await getDatabase()
     const collection = db.collection<Property>('properties')
 
-    // Build filter query
-    const filter: any = { ownerId: new ObjectId(session.user.id) }
+    const filter: any = { ownerId: new ObjectId(user.id) }
     
     if (status) {
       // Use the status field directly if it exists, otherwise fall back to the old logic
@@ -107,20 +127,12 @@ export async function GET(request: NextRequest) {
 // PUT - Update property
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const user = await getAuthUser(request)
     
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
-      )
-    }
-
-    // Allow both owners and students to update their properties
-    if (!['owner', 'student'].includes(session.user.role)) {
-      return NextResponse.json(
-        { success: false, error: 'Only property owners and students can update properties' },
-        { status: 403 }
       )
     }
 
@@ -140,7 +152,7 @@ export async function PUT(request: NextRequest) {
     // Verify ownership
     const existingProperty = await collection.findOne({
       _id: new ObjectId(propertyId),
-      ownerId: new ObjectId(session.user.id)
+      ownerId: new ObjectId(user.id)
     })
 
     if (!existingProperty) {
@@ -220,20 +232,12 @@ export async function PUT(request: NextRequest) {
 // DELETE - Delete property
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const user = await getAuthUser(request)
     
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
-      )
-    }
-
-    // Allow both owners and students to delete their properties
-    if (!['owner', 'student'].includes(session.user.role)) {
-      return NextResponse.json(
-        { success: false, error: 'Only property owners and students can delete properties' },
-        { status: 403 }
       )
     }
 
@@ -254,7 +258,7 @@ export async function DELETE(request: NextRequest) {
     const result = await collection.updateOne(
       { 
         _id: new ObjectId(propertyId),
-        ownerId: new ObjectId(session.user.id)
+        ownerId: new ObjectId(user.id)
       },
       { 
         $set: { 

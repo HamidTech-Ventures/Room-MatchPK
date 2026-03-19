@@ -225,14 +225,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Allow both owners and students to create properties
-    if (!['owner', 'student'].includes(user.role)) {
-      return NextResponse.json(
-        { success: false, error: 'Only property owners and students can create properties' },
-        { status: 403 }
-      );
-    }
-
     const body = await request.json();
 
     // Validate required fields based on property type
