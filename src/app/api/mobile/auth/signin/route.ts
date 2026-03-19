@@ -58,10 +58,14 @@ export async function POST(request: NextRequest) {
       name: user.name || '',
     };
 
+    const { getMobileSecret } = require('@/lib/auth');
+    const jwtSecret = getMobileSecret();
+    console.log('Mobile Login: Using consistent secret from lib/auth');
+
     const token = jwt.sign(
       tokenPayload,
-      process.env.JWT_SECRET || 'your_jwt_secret',
-      { expiresIn: '1d' } // Token expires in 1 day
+      jwtSecret,
+      { expiresIn: '7d' } // Use consistent 7d expiry
     );
 
     // Prepare response

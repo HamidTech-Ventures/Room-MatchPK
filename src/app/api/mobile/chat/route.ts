@@ -3,11 +3,10 @@ import { getDatabase, isDatabaseConfigured } from '@/lib/mongodb'
 import { ObjectId } from 'mongodb'
 import jwt from 'jsonwebtoken'
 
-// Environment variable for JWT secret
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret'
+import { verifyToken } from '@/lib/auth'
 
 // Middleware to verify Bearer token
-async function verifyToken(req: NextRequest) {
+async function verifyTokenMiddleware(req: NextRequest) {
   const authHeader = req.headers.get('authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null
@@ -15,17 +14,17 @@ async function verifyToken(req: NextRequest) {
 
   const token = authHeader.replace('Bearer ', '')
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { email: string; name?: string }
+    const decoded = verifyToken(token) as { email: string; name?: string }
     return decoded
   } catch (error) {
-    console.error('Token verification error:', error)
+    console.error('Mobile Chat: Token verification error:', error)
     return null
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await verifyToken(request)
+    const user = await verifyTokenMiddleware(request)
     if (!user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -47,8 +46,8 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error('Simple chat error:', error)
-    return NextResponse.json({ 
-      error: 'Chat service error', 
+    return NextResponse.json({
+      error: 'Chat service error',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
@@ -83,8 +82,8 @@ async function createConversation(user: { email: string; name?: string }, data: 
     })
 
     if (existingChat) {
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         conversation: {
           id: existingChat._id.toString(),
           participants: existingChat.participants,
@@ -105,9 +104,9 @@ async function createConversation(user: { email: string; name?: string }, data: 
     }
 
     const result = await chatsCollection.insertOne(newChat)
-    
-    return NextResponse.json({ 
-      success: true, 
+
+    return NextResponse.json({
+      success: true,
       conversation: {
         id: result.insertedId.toString(),
         participants: newChat.participants,
@@ -165,16 +164,16 @@ async function sendMessage(user: { email: string; name?: string }, data: any) {
 
     await chatsCollection.updateOne(
       { _id: new ObjectId(conversationId) },
-      { 
-        $set: { 
+      {
+        $set: {
           lastMessage: text.trim(),
           updatedAt: new Date()
         }
       }
     )
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: {
         id: result.insertedId.toString(),
         conversationId,
@@ -229,7 +228,7 @@ async function getConversations(user: { email: string; name?: string }) {
       { email: { $in: participantEmails } },
       { projection: { email: 1, role: 1 } }
     ).toArray()
-    
+
     const roleMap = new Map()
     participantUsers.forEach(user => {
       roleMap.set(user.email, user.role || 'student')
@@ -237,7 +236,7 @@ async function getConversations(user: { email: string; name?: string }) {
 
     const transformedConversations = conversations.map(conv => {
       let otherParticipant: string, otherParticipantName: string, otherParticipantRole: string
-      
+
       if (isAdmin) {
         const adminEmails = ['admin@roommatch.pk', 'admin@roommatchpk.com']
         const nonAdminParticipant = conv.participants.find((p: string) => !adminEmails.includes(p))

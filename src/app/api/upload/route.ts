@@ -1,117 +1,179 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
-import { existsSync } from 'fs'
-import path from 'path'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-config'
+import { NextRequest, NextResponse } from 'next/server';
+import { uploadMultipleToCloudinary } from '@/lib/cloudinary';
+import { getDatabase } from '@/lib/mongodb';
+import { verifyToken } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session?.user) {
+    // Check authentication via JWT
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
-      )
+      );
     }
 
-    const formData = await request.formData()
-    const files = formData.getAll('files') as File[]
-    const propertyId = formData.get('propertyId') as string || 'temp'
+    const token = authHeader.split(' ')[1];
+    let decoded;
+
+    try {
+      decoded = verifyToken(token) as { id: string; role: string };
+    } catch (error) {
+      console.error('Mobile Upload: Token verification error:', error);
+      return NextResponse.json(
+        { success: false, error: 'Invalid or expired token' },
+        { status: 401 }
+      );
+    }
+
+    if (!decoded?.id) {
+      console.error('Mobile Upload: Token decoded but ID missing');
+      return NextResponse.json(
+        { success: false, error: 'Invalid token: user ID missing' },
+        { status: 401 }
+      );
+    }
+
+    const formData = await request.formData();
+    const files = formData.getAll('files') as File[];
+    const propertyId = formData.get('propertyId') as string || 'temp';
+    const folder = formData.get('folder') as string || 'roommatch_images';
 
     if (!files || files.length === 0) {
       return NextResponse.json(
         { success: false, error: 'No files provided' },
         { status: 400 }
-      )
+      );
     }
 
-    // Create upload directory if it doesn't exist
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', propertyId)
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true })
+    // Validate file types
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const invalidFiles = files.filter(file => !allowedTypes.includes(file.type));
+
+    if (invalidFiles.length > 0) {
+      return NextResponse.json(
+        { success: false, error: 'Only JPEG, PNG, and WebP images are allowed' },
+        { status: 400 }
+      );
     }
 
-    const uploadedFiles: string[] = []
+    // Validate file sizes (5MB max per file)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const oversizedFiles = files.filter(file => file.size > maxSize);
 
-    for (const file of files) {
-      if (!file.type.startsWith('image/')) {
-        continue // Skip non-image files
-      }
+    if (oversizedFiles.length > 0) {
+      return NextResponse.json(
+        { success: false, error: 'File size must be less than 5MB' },
+        { status: 400 }
+      );
+    }
 
-      // Generate unique filename
-      const timestamp = Date.now()
-      const randomString = Math.random().toString(36).substring(2, 15)
-      const extension = path.extname(file.name)
-      const filename = `${timestamp}_${randomString}${extension}`
-      
-      const filepath = path.join(uploadDir, filename)
-      
-      // Convert file to buffer and save
-      const bytes = await file.arrayBuffer()
-      const buffer = Buffer.from(bytes)
-      
-      await writeFile(filepath, buffer)
-      
-      // Store relative path for database
-      const relativePath = `/uploads/${propertyId}/${filename}`
-      uploadedFiles.push(relativePath)
+    // Upload to Cloudinary
+    const uploadResults = await uploadMultipleToCloudinary(files, `${folder}/${propertyId}`);
+
+    // Store image URLs and public_ids in database
+    const db = await getDatabase();
+
+    // Create image records for tracking
+    const imageRecords = uploadResults.map(result => ({
+      propertyId,
+      userId: decoded.id, // Use id from decoded JWT
+      url: result.secure_url,
+      publicId: result.public_id,
+      folder: `${folder}/${propertyId}`,
+      createdAt: new Date(),
+      isActive: true
+    }));
+
+    // Insert into images collection for tracking
+    if (imageRecords.length > 0) {
+      await db.collection('images').insertMany(imageRecords);
     }
 
     return NextResponse.json({
       success: true,
-      files: uploadedFiles,
-      message: `${uploadedFiles.length} files uploaded successfully`
-    })
+      images: uploadResults,
+      message: `${uploadResults.length} images uploaded successfully`
+    });
 
   } catch (error) {
-    console.error('Error uploading files:', error)
+    console.error('Error uploading images:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to upload files' },
+      { success: false, error: 'Failed to upload images' },
       { status: 500 }
-    )
+    );
   }
 }
 
-// GET - Get uploaded files for a property
+// GET - Get images for a property
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const propertyId = searchParams.get('propertyId')
-
-    if (!propertyId) {
+    // Check authentication via JWT
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { success: false, error: 'Property ID is required' },
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const token = authHeader.split(' ')[1];
+    let decoded;
+
+    try {
+      decoded = verifyToken(token) as { id: string; role: string };
+    } catch (error) {
+      console.error('Mobile Upload GET: Token verification error:', error);
+      return NextResponse.json(
+        { success: false, error: 'Invalid or expired token' },
+        { status: 401 }
+      );
+    }
+
+    if (!decoded?.id) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid token: user ID missing' },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const propertyId = searchParams.get('propertyId');
+    const userId = searchParams.get('userId');
+
+    if (!propertyId && !userId) {
+      return NextResponse.json(
+        { success: false, error: 'Property ID or User ID is required' },
         { status: 400 }
-      )
+      );
     }
 
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', propertyId)
-    
-    if (!existsSync(uploadDir)) {
-      return NextResponse.json({
-        success: true,
-        files: []
-      })
-    }
+    const db = await getDatabase();
 
-    const fs = require('fs')
-    const files = fs.readdirSync(uploadDir)
-    const imageFiles = files
-      .filter((file: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(file))
-      .map((file: string) => `/uploads/${propertyId}/${file}`)
+    const query: any = { isActive: true };
+    if (propertyId) query.propertyId = propertyId;
+    if (userId) query.userId = userId;
+
+    const images = await db.collection('images')
+      .find(query)
+      .sort({ createdAt: -1 })
+      .toArray();
 
     return NextResponse.json({
       success: true,
-      files: imageFiles
-    })
+      images: images.map(img => ({
+        url: img.url,
+        publicId: img.publicId,
+        createdAt: img.createdAt
+      }))
+    });
 
   } catch (error) {
-    console.error('Error fetching files:', error)
+    console.error('Error fetching images:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch files' },
+      { success: false, error: 'Failed to fetch images' },
       { status: 500 }
-    )
+    );
   }
 }
