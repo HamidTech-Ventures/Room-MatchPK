@@ -131,6 +131,13 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    if (!['owner', 'student'].includes(user.role)) {
+      return NextResponse.json(
+        { success: false, error: 'Only property owners and students can update properties' },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
     const { propertyId, ...updateData } = body
 
@@ -210,6 +217,13 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Invalid or expired token' },
         { status: 401 }
+      )
+    }
+
+    if (!['owner', 'student'].includes(user.role)) {
+      return NextResponse.json(
+        { success: false, error: 'Only property owners and students can delete properties' },
+        { status: 403 }
       )
     }
 
