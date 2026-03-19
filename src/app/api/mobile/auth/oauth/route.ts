@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import jwt from 'jsonwebtoken';
 import { ObjectId } from 'mongodb';
-import { getMobileSecret } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,10 +39,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate JWT token
+    const tokenPayload = {
+      id: user._id.toString(),
+      email: user.email,
+      role: user.role || 'student',
+      name: user.name || '',
+    };
+
     const token = jwt.sign(
-      { id: user.id || user._id, email: user.email, role: user.role },
-      getMobileSecret(),
-      { expiresIn: '7d' } // Token expires in 7 days
+      tokenPayload,
+      process.env.JWT_SECRET || 'your_jwt_secret',
+      { expiresIn: '1d' } // Token expires in 1 day
     );
 
     // Prepare response

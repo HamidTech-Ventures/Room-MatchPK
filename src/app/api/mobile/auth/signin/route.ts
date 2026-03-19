@@ -3,7 +3,6 @@ import { getDatabase } from '@/lib/mongodb';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { ObjectId } from 'mongodb';
-import { getMobileSecret } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -59,11 +58,10 @@ export async function POST(request: NextRequest) {
       name: user.name || '',
     };
 
-    const jwtSecret = getMobileSecret();
     const token = jwt.sign(
       tokenPayload,
-      jwtSecret,
-      { expiresIn: '7d' } 
+      process.env.JWT_SECRET || 'your_jwt_secret',
+      { expiresIn: '1d' } // Token expires in 1 day
     );
 
     // Prepare response
