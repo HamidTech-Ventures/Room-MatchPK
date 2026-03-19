@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadMultipleToCloudinary } from '@/lib/cloudinary';
 import { getDatabase } from '@/lib/mongodb';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret'
+import { verifyToken } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,10 +16,11 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.split(' ')[1];
     let decoded;
-    
+
     try {
-      decoded = jwt.verify(token, JWT_SECRET) as { id: string; role: string };
+      decoded = verifyToken(token) as { id: string; role: string };
     } catch (error) {
+      console.error('Mobile Upload: Token verification error:', error);
       return NextResponse.json(
         { success: false, error: 'Invalid or expired token' },
         { status: 401 }
@@ -29,8 +28,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (!decoded?.id) {
+      console.error('Mobile Upload: Token decoded but ID missing');
       return NextResponse.json(
-        { success: false, error: 'Invalid or expired token' },
+        { success: false, error: 'Invalid token: user ID missing' },
         { status: 401 }
       );
     }
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     // Validate file types
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     const invalidFiles = files.filter(file => !allowedTypes.includes(file.type));
-    
+
     if (invalidFiles.length > 0) {
       return NextResponse.json(
         { success: false, error: 'Only JPEG, PNG, and WebP images are allowed' },
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     // Validate file sizes (5MB max per file)
     const maxSize = 5 * 1024 * 1024; // 5MB
     const oversizedFiles = files.filter(file => file.size > maxSize);
-    
+
     if (oversizedFiles.length > 0) {
       return NextResponse.json(
         { success: false, error: 'File size must be less than 5MB' },
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
 
     // Store image URLs and public_ids in database
     const db = await getDatabase();
-    
+
     // Create image records for tracking
     const imageRecords = uploadResults.map(result => ({
       propertyId,
@@ -120,10 +120,11 @@ export async function GET(request: NextRequest) {
 
     const token = authHeader.split(' ')[1];
     let decoded;
-    
+
     try {
-      decoded = jwt.verify(token, JWT_SECRET) as { id: string; role: string };
+      decoded = verifyToken(token) as { id: string; role: string };
     } catch (error) {
+      console.error('Mobile Upload GET: Token verification error:', error);
       return NextResponse.json(
         { success: false, error: 'Invalid or expired token' },
         { status: 401 }
@@ -132,7 +133,7 @@ export async function GET(request: NextRequest) {
 
     if (!decoded?.id) {
       return NextResponse.json(
-        { success: false, error: 'Invalid or expired token' },
+        { success: false, error: 'Invalid token: user ID missing' },
         { status: 401 }
       );
     }
@@ -149,7 +150,7 @@ export async function GET(request: NextRequest) {
     }
 
     const db = await getDatabase();
-    
+
     const query: any = { isActive: true };
     if (propertyId) query.propertyId = propertyId;
     if (userId) query.userId = userId;

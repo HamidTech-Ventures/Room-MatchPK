@@ -2,19 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDatabase } from '@/lib/mongodb'
 import { Property } from '@/lib/models'
 import { ObjectId } from 'mongodb'
-import jwt from 'jsonwebtoken'
-
-const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your_jwt_secret'
-
-// Helper function to verify JWT token
-async function verifyToken(token: string) {
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; role: string }
-    return decoded
-  } catch (error) {
-    return null
-  }
-}
+import { verifyToken } from '@/lib/auth'
 
 // GET - Fetch properties owned by the current user
 export async function GET(request: NextRequest) {
@@ -28,8 +16,10 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.split(' ')[1]
-    const user = await verifyToken(token)
-    if (!user) {
+    let user
+    try {
+      user = await verifyToken(token) as { id: string; role: string }
+    } catch (error) {
       return NextResponse.json(
         { success: false, error: 'Invalid or expired token' },
         { status: 401 }

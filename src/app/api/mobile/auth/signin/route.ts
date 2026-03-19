@@ -3,6 +3,7 @@ import { getDatabase } from '@/lib/mongodb';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { ObjectId } from 'mongodb';
+import { getMobileSecret } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,14 +59,11 @@ export async function POST(request: NextRequest) {
       name: user.name || '',
     };
 
-    const { getMobileSecret } = require('@/lib/auth');
     const jwtSecret = getMobileSecret();
-    console.log('Mobile Login: Using consistent secret from lib/auth');
-
     const token = jwt.sign(
       tokenPayload,
       jwtSecret,
-      { expiresIn: '7d' } // Use consistent 7d expiry
+      { expiresIn: '7d' } 
     );
 
     // Prepare response

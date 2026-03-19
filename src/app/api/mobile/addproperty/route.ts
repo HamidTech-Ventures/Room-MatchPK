@@ -2,13 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { Property, CreateDocument } from '@/lib/models';
 import { ObjectId } from 'mongodb';
-import { verify } from 'jsonwebtoken'; // Import JWT verification
-
-// Secret key for JWT (store in environment variables in production)
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
+import { verifyToken } from '@/lib/auth';
 
 // Middleware to verify JWT token
-async function verifyToken(request: NextRequest) {
+async function verifyTokenMiddleware(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
@@ -16,9 +13,10 @@ async function verifyToken(request: NextRequest) {
 
   const token = authHeader.split(' ')[1];
   try {
-    const payload = verify(token, JWT_SECRET) as { id: string; role: string };
+    const payload = verifyToken(token) as { id: string; role: string };
     return payload;
   } catch (error) {
+    console.error('Mobile AddProperty: Token verification error:', error);
     return null;
   }
 }
@@ -219,7 +217,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Verify JWT token
-    const user = await verifyToken(request);
+    const user = await verifyTokenMiddleware(request);
     if (!user) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },

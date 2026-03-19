@@ -16,6 +16,11 @@ export async function verifyPassword(password: string, hashedPassword: string): 
 
 export function getMobileSecret(): string {
   const secret = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your_jwt_secret'
+  
+  // Safe debug logging (only first 3 chars)
+  const source = process.env.JWT_SECRET ? 'JWT_SECRET' : (process.env.NEXTAUTH_SECRET ? 'NEXTAUTH_SECRET' : 'default');
+  console.log(`[Mobile Auth] Using secret from ${source} (prefix: ${secret.substring(0, 3)}...)`);
+  
   return secret
 }
 

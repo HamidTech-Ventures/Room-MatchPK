@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDatabase } from '@/lib/mongodb'
 import { Review, Property } from '@/lib/models'
 import { ObjectId } from 'mongodb'
-import jwt from 'jsonwebtoken'
+import { verifyToken } from '@/lib/auth'
 
 function getPropertyIdFromQuery(request: NextRequest): string | null {
   const { searchParams } = new URL(request.url)
@@ -103,10 +103,10 @@ export async function POST(request: NextRequest) {
     const token = authHeader.split(' ')[1]
     let decodedToken: any
     try {
-      decodedToken = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret')
+      decodedToken = verifyToken(token) // Using verifyToken from lib/auth
       console.log('Decoded token:', decodedToken)
     } catch (error) {
-      console.log('Invalid token:', error)
+      console.error('Mobile Review: Token verification error:', error) // Added error logging
       return NextResponse.json(
         { success: false, error: 'Invalid or expired token' },
         { status: 401 }

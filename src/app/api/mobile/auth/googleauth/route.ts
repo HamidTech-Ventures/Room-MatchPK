@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { OAuth2Client } from "google-auth-library"
 import jwt from "jsonwebtoken"
-import { findUserByEmail, createUser } from "@/lib/auth"
+import { findUserByEmail, createUser, getMobileSecret } from "@/lib/auth"
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 
@@ -91,10 +91,7 @@ export async function POST(req: Request) {
     // Check user in DB
     let user = await findOrCreateUser(payload.email, payload.name, intent, payload.picture)
     // Generate JWT for Flutter using consistent secret
-    const { getMobileSecret } = require("@/lib/auth")
     const jwtSecret = getMobileSecret()
-    console.log('Google Auth: Using consistent secret from lib/auth');
-
     const appToken = jwt.sign(
       {
         id: user.id,

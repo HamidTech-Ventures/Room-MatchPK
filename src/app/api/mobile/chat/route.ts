@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDatabase, isDatabaseConfigured } from '@/lib/mongodb'
 import { ObjectId } from 'mongodb'
-import jwt from 'jsonwebtoken'
-
 import { verifyToken } from '@/lib/auth'
 
 // Middleware to verify Bearer token
